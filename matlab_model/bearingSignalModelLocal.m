@@ -85,7 +85,7 @@ indexImpulses = indexImpulses(1:index); # Use only the impulses that would occur
 # Compute some metrics as a sanity check
 meanDeltaT = mean(deltaTimp); # Mean time between impulses # Returned from function
 varDeltaT = var(deltaTimp);
-meanDeltaTimpOver = mean(deltaTimpIndex/fs); # Teoretical variance of inter arival times?
+meanDeltaTimpOver = mean(deltaTimpIndex/fs); # Teoretical variance of inter arival times? Empirical rather?
 varDeltaTimpOver = var(deltaTimpIndex/fs);
 
 x = zeros(1,L);

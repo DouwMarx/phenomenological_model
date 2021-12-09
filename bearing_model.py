@@ -5,42 +5,19 @@ import scipy
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
 from src.utils.search import find_nearest_index
+import yaml
 
-# Generation of a simulated signal for localized fault in rolling element bearing
-
-# TODO: Add this to a yaml file
-d = 8.4  # bearing roller diameter [mm]
-D = 71.5  # pitch circle diameter [mm]
-n_ball = 16  # number of rolling elements
-contactAngle = 15.7 * np.pi / 180  # contact angle
-faultType = 3  # fault type selection: inner, outer, ball [string]
-fc = 3  # row vector containing the carrier component of the speed
-fm = 3  # row vector containing the modulation frequency
-fd = 3  # row vector containing the frequency deviation
-N = 3  # number of points per revolution
-variance_factor_angular_distance_between_impulses = 0.0011  # variance for the generation of the random contribution (ex. 0.04)
-fs = 3  # sample frequency of the time vector
-k = 2e13  # SDOF stiffness
-zita = 0.02  # SDOF damping
-fn = 4230  # SDOF natural freq [Hz]
-Lsdof = 3  # length of the in number of points of the SDOF response
-SNR_dB = 3  # signal to noise ratio [dB]
-qAmpMod = 1  # amplitude modulation due to the load (ex. 0.3)
+# TODO: Potentially making error at the edges when convolving (need to include additional pulses than requested by the user to adress this issue)
+# TODO: Todo need to add amplitude modulation for the inner race fault.
+# TODO: Let a global class inherit from a measurement object
 
 
-# TODO: Possibly return these metrics as validation
-# meanDeltaT = theoretical mean of the inter-arrival times
-# varDeltaT = theoretical variance of the inter-arrival times
-# menDeltaTimpOver = real mean of the inter-arrival times
-# varDeltaTimpOver = real variance of the inter-arrival times
-# errorDeltaTimp = generated error in the inter-arrival times
-
-class Bearing(object):
+class Bearing():
     """
     Class for defining fault characteristics of bearings based on bearing parameters.
     """
 
-    def __init__(self, d, D, contact_angle, n_ball,**kwargs):
+    def __init__(self, d, D, contact_angle, n_ball, **kwargs):
         """
 
         Parameters
@@ -111,8 +88,9 @@ class Bearing(object):
         return average_angular_distance_between_impulses
 
 
-class SpeedProfile(object):
+class SpeedProfile():
     # TODO: This makes the assumption that the frequency at which the speed profile is defined is the same as the sampling frequency which is not strictly required
+    # TODO: change the starting angle at which the fist fault occurs
     def __init__(self, speed_profile_type, **kwargs):
         # Values for these attributes are set in the measurement class
         self.time = None
@@ -147,7 +125,7 @@ class SpeedProfile(object):
 
     def get_angle_as_function_of_time(self):
         """Integrate the speed profile to get the angle traversed as a function of time"""
-        # integrate_a = np.cumsum(sp[:,0:-1] + 0.5*np.diff(sp,axis=1),axis=1)/m.master_frequency can remake integration in numpy only if required
+        # integrate_a = np.cumsum(sp[:,0:-1] + 0.5*np.diff(sp,axis=1),axis=1)/m.master_sample_frequency can remake integration in numpy only if required
         speed_profile = self.get_rotation_frequency_as_function_of_time()
         angle = integrate.cumtrapz(y=speed_profile, x=self.time, axis=1, initial=0)  # Assume angle starts at 0
         return angle
@@ -157,110 +135,123 @@ class SpeedProfile(object):
                -1]  # Total angular distance traveled for each measurement at the end of the measurement interval
 
 
-class SdofSys(object):
-    # %% Acceleration of a SDOF system
-    # % [sdofRespTime] = sdofResponse(fs,k,zita,fn,Lsdof)
-    # %
-    # % Input:
-    # % fs = sample frequency [Hz]
-    # % k = spring stiffness [N/m]
-    # % zita = damping coefficient
-    # % fn = Natural frequency [Hz]
-    # % Lsdof = desired signal length [points]
-    # %
-    # % Output:
-    # % sdofRespTime = acceleration (row vector)
-    # def __init__(self, fs=1000, k=100, zeta=0.1, fn=100, F=1):
-    def __init__(self, fs, k, zeta, fn, F,**kwargs):
-        super().__init__(**kwargs)
-        self.m = k / (2 * np.pi * fn) ** 2
-        self.fs = fs
+class SdofSys():
+    def __init__(self, k, zeta, fn, fault_severity, **kwargs):
+        """
+        Return the acceleration of a single degree of freedom dynamical system that with a step input.
 
-        self.F = 1
+        Parameters
+        ----------
+        sampling_frequency: sample frequency [Hz] #TODO: Delete this later: get from other properties
+        k: spring stiffness [N/m]
+        zeta: damping ratio
+        fn: natural frequency [Hz]
+        fault_severity: Step input magnitude [N]
+        kwargs
+
+        Derivation of required transient length
+        --------------------------------------
+        We would like the transient to decay to 1% of its original amplitude
+
+        e^0 / e^(-zeta*omegan*t_end) < 0.01
+        1 < percentage*e^(-zeta*omegan*t_end)
+        log(1/percentage)/(-zeta*omegan) < t_end
+        t_end > log(1/percentage)/(-zeta*omegan)
+
+        """
+        super().__init__(**kwargs)
+        m = k / (2 * np.pi * fn) ** 2
+        F = fault_severity
         self.zeta = zeta
 
-        self.A = F / self.m
+        self.A = F / m
         self.omegan = 2 * np.pi * fn
         self.omegad = self.omegan * np.sqrt(1 - zeta ** 2)
 
-        # e^0 / e^(-zeta*omegan*t_end) < 0.01 # Need to decay to 1% of original amplitude
-        # 1 < percentage*e^(-zeta*omegan*t_end)
-        # log(1/percentage)/(-zeta*omegan) < t_end
-        # t_end > log(1/percentage)/(-zeta*omegan)
-
-        percentage = 0.01
+        percentage = 0.01  # Percentage of the original amplitude to decay to
         self.transient_duration = np.log(1 / percentage) / (self.zeta * self.omegan)
 
-        self.t_range = np.linspace(0, self.transient_duration, int(self.transient_duration * fs))
-
-        print("sdof sys profile init ran")
+        self.t_range = np.linspace(0, self.transient_duration, int(self.transient_duration * self.master_sample_frequency))
 
     def get_transient_response(self):
-        # SDOF response
+        """
+        Compute the transient response of signle degree of freedom system subjected to step input.
+
+        Returns
+        -------
+
+        """
         xt = self.A / self.omegad * np.exp(-self.zeta * self.omegan * self.t_range) * np.sin(
             self.omegad * self.t_range)  # displacement
-        xd = np.hstack([[0], np.diff(xt) * fs])  # velocity
-        sdof_reponse = np.hstack([[0], np.diff(xd) * fs])  # velocity
+        xd = np.hstack([[0], np.diff(xt) * self.master_sample_frequency])  # velocity
+        sdof_reponse = np.hstack(
+            [[0], np.diff(xd) * self.master_sample_frequency])  # acceleration #TODO: Use the analytical formula and not double integration
         return sdof_reponse
-        # return 5000*xt
 
 
-class Impulse(object): # TODO: Possibly inherit from Bearing (or Gearbox) for that matter
+class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that matter
     # TODO: Fix the init
-    def __init__(self,**kwargs):
+    def __init__(self, slip_variance_factor,fault_type, **kwargs):
         super().__init__(**kwargs)
-        print("impulse init ran")
+        # super().__init__()
+
+        self.variance_factor_angular_distance_between_impulses = slip_variance_factor
+        self.fault_type =fault_type # Fault type ie. "ball", "outer", "inner"
         return
 
     def get_angular_distances_at_which_impulses_occur(self,
                                                       expected_number_of_impulses_during_measurement,
-                                                      average_angular_distance_between_impulses,
-                                                      variace_factor_angular_distance_between_impulses):
+                                                      average_angular_distance_between_impulses):
         # Generate 5% than maximum more to account for  possibility of ending up with a shorter signal
         n_impulse_periods_to_generate = int(np.ceil(np.max(expected_number_of_impulses_during_measurement) * 1.05))
         # if std(expected_number_of_impulses) >threash : probably inefficient ie. generating too much data that will be discarded
 
         # Create array of the mean and variance for angular distance between impulses
-        ones = np.ones((m.n_measurements, n_impulse_periods_to_generate))
+        ones = np.ones((self.n_measurements, n_impulse_periods_to_generate))
         mean = ones * average_angular_distance_between_impulses
 
         # Generate random data of the distances traveled
-        variance = mean * variace_factor_angular_distance_between_impulses
+        variance = mean * self.variance_factor_angular_distance_between_impulses
         distance_traveled_between_impulses = np.random.normal(mean, scale=np.sqrt(variance))
 
         # Add the distances between impulses together to find the distances from the start where impulses occur.
         cumulative_impulse_distance = np.cumsum(distance_traveled_between_impulses, axis=1)
         angular_distances_at_which_impulses_occur = np.hstack(
-            [np.zeros((m.n_measurements, 1)), cumulative_impulse_distance])  # An impulse occurs immediately
+            [np.zeros((self.n_measurements, 1)), cumulative_impulse_distance])  # An impulse occurs immediately
         # TODO: Add random variation in when the fist impulse occurs
         return angular_distances_at_which_impulses_occur
 
-    @staticmethod
-    def get_indexes_at_which_impulse_occur_for_single_measurement(angles_for_measurement,impulse_distances_in_measurement_interval):
+    def get_indexes_at_which_impulse_occur_for_single_measurement(self,angles_for_measurement,
+                                                                  impulse_distances_in_measurement_interval):
         # Find the times corresponding to a given angle
-        times_corresponding_to_angle = interp1d(angles_for_measurement, m.time)(impulse_distances_in_measurement_interval)
+        times_corresponding_to_angle = interp1d(angles_for_measurement, self.time)(
+            impulse_distances_in_measurement_interval)
 
         # Find the indexes that is closest to the times at which the impulses occur
-        indexes = find_nearest_index(m.time, times_corresponding_to_angle)
+        indexes = find_nearest_index(self.time, times_corresponding_to_angle)
         return indexes
 
     @staticmethod
-    def get_impulses_distances_in_measurement_interval(impulse_distances_for_measurement,total_angle_traversed_for_measurement):
+    def get_impulses_distances_in_measurement_interval(impulse_distances_for_measurement,
+                                                       total_angle_traversed_for_measurement):
         # Discard the impulses that fall outside of the ranges of total angles traversed
-        return impulse_distances_for_measurement[impulse_distances_for_measurement < total_angle_traversed_for_measurement]
+        return impulse_distances_for_measurement[
+            impulse_distances_for_measurement < total_angle_traversed_for_measurement]
 
-    def indexes_which_impulse_occur_for_all_measurement(self,angular_distances_at_which_impulses_occur):
-        indexes_at_which_impulses_occur = np.zeros((m.n_measurements,
-                                                    m.n_master_samples))  # Initialize empty array that show (master) samples where impulses will occur
-        for measurement in range(m.n_measurements):
+    def indexes_which_impulse_occur_for_all_measurement(self, angular_distances_at_which_impulses_occur):
+        indexes_at_which_impulses_occur = np.zeros((self.n_measurements,
+                                                    self.n_master_samples))  # Initialize empty array that show (master) samples where impulses will occur
+        for measurement in range(self.n_measurements):
             # For each separate measurement
             angles_for_measurement = self.angles[measurement, :]
             impulse_distances_for_measurement = angular_distances_at_which_impulses_occur[measurement, :]
             total_angle_traversed_for_measurement = self.total_angle_traversed[measurement]
 
-            impulse_distances_in_measurement_interval = self.get_impulses_distances_in_measurement_interval(impulse_distances_for_measurement,total_angle_traversed_for_measurement)
+            impulse_distances_in_measurement_interval = self.get_impulses_distances_in_measurement_interval(
+                impulse_distances_for_measurement, total_angle_traversed_for_measurement)
 
-            indexes = self.get_indexes_at_which_impulse_occur_for_single_measurement(angles_for_measurement,impulse_distances_in_measurement_interval)
+            indexes = self.get_indexes_at_which_impulse_occur_for_single_measurement(angles_for_measurement,
+                                                                                     impulse_distances_in_measurement_interval)
 
             # Set the indexes where the impulses occur to 1 (Otherwise zero)
             indexes_at_which_impulses_occur[measurement, indexes] = 1
@@ -268,12 +259,18 @@ class Impulse(object): # TODO: Possibly inherit from Bearing (or Gearbox) for th
         return indexes_at_which_impulses_occur
 
 
-class Measurement(Bearing,SpeedProfile, SdofSys, Impulse):
+class Measurement(Bearing,Impulse, SdofSys,SpeedProfile):#, Impulse):
     """
     Class used to define the properties of the dataset that will be simulated. Used to manage the overall data generation
     """
 
-    def __init__(self, n_measurements=5, measurement_duration=1, sampling_frequency=40000):
+    # TODO: let paramets be pulled from flattened dict from yaml
+    def __init__(self,
+                 n_measurements,
+                 t_duration,
+                 sampling_frequency,
+                 measurement_noise_variance,
+                 **kwargs):
         """
 
         Parameters
@@ -282,44 +279,73 @@ class Measurement(Bearing,SpeedProfile, SdofSys, Impulse):
         measurement_duration: Duration of measurement in seconds [s].
         sampling_frequency Sampling frequency [Hz]
         """
+
+        # self.check_input_parameters(**kwargs) # TODO: need to run a check that gives the user information if the wrong arguments are provided
+
+        # Sampling properties
+        self.sampling_frequency = sampling_frequency
+        self.master_sample_frequency = int(self.sampling_frequency * 2)  # represents continuous time, the sampling frequency at which computations are performed.
+
         # Initialize the base classes
-        super(Measurement, self).__init__(speed_profile_type="constant",
-                                          fs=1000,
-                                          k=1000,
-                                          zeta=0.1,
-                                          fn=100,
-                                          F=1,
-                                          d=0.02,
-                                          D = 0.1,
-                                          contact_angle =3,
-                                          n_ball = 10)
+        super(Measurement, self).__init__(**kwargs)
+        #Bearing.__init__(self,**kwargs) # Alternative is to initialize the base classes seperately since they have some interdependencies
 
         # Measurement attributes
         self.n_measurements = n_measurements
-        self.measurement_duration = measurement_duration
-        self.sampling_frequency = sampling_frequency
+        self.t_duration = t_duration
 
         # Operating condition attributes
 
         # Compute derived attributes
-        self.master_frequency = int(
-            self.sampling_frequency * 2)  # represents continuous time, the sampling frequency at which computations are performed.
 
-        self.n_measurement_samples = self.measurement_duration * self.sampling_frequency  # Total number of samples over the measurment interval
+        self.n_measurement_samples = self.t_duration * self.sampling_frequency  # Total number of samples over the measurment interval
 
-        self.n_master_samples = self.measurement_duration * self.master_frequency  # Total number of samples of the master samples "continuous time".
-        self.time = np.linspace(0, self.measurement_duration,
+        self.n_master_samples = self.t_duration * self.master_sample_frequency  # Total number of samples of the master samples "continuous time".
+        self.time = np.linspace(0, self.t_duration,
                                 self.n_master_samples)  # Time vector based on master sample rate.
 
+    def check_input_parameters(self,**kwargs):
+        """
+        Check which of the entries of the provided dictionary might be missing.
+        
+        Returns
+        -------
+        """
+        required_parameters = ['fault_severity',
+                               'fault_type',
+                               'slip_variance_factor',
+                               'measurement_noise_variance',
+                               'd',
+                               'D',
+                               'n_ball',
+                               'contact_angle',
+                               'sampling_frequency',
+                               't_duration',
+                               'n_measurements',
+                               'k',
+                               'zeta',
+                               'fn',
+                               'speed_profile_type']
+
+        print(kwargs.keys())
+
+
     def get_measurements(self):
-        self.set_angles() # Compute the angles from the speed profile
+        """
+        Compute the measurement set for the given parameters
+
+        Returns
+        -------
+        Measurements array (number_of_measurements,number_of_samples)
+        """
+
+        self.set_angles()  # Compute the angles from the speed profile
         average_angular_distance_between_impulses = self.get_angular_distance_between_impulses("ball")
         expected_number_of_impulses_during_measurement = self.total_angle_traversed / average_angular_distance_between_impulses
 
         angular_distances_at_which_impulses_occur = self.get_angular_distances_at_which_impulses_occur(
             expected_number_of_impulses_during_measurement,
-            average_angular_distance_between_impulses,
-            variance_factor_angular_distance_between_impulses)
+            average_angular_distance_between_impulses)
 
         indexes = self.indexes_which_impulse_occur_for_all_measurement(angular_distances_at_which_impulses_occur)
 
@@ -330,27 +356,9 @@ class Measurement(Bearing,SpeedProfile, SdofSys, Impulse):
 
         convolved = scipy.signal.convolve2d(indexes, transient.reshape(1, -1), mode="same")
         # # convolved2 = scipy.signal.convolve(indexes_at_which_impulses_occur, transient.reshape(1,-1), mode="same")
-        # # These two options need to be looped over, can test performance
-        # # plt.plot(np.convolve(transient,indexes_at_which_impulses_occur[0]))
-        # # plt.plot(fftconvolve(transient,indexes_at_which_impulses_occur[0]))
 
+
+        # # measured = scipy.signal.decimate(measurement, 2, axis=1, ftype="fir") # Subsample from the master sample rate to the actual sample rate
+                                                                                  # Low pass filter to prevent ani-aliasing
         return convolved
-
-
-
-# TODO: Need to have Measurement(bearing_properties,measurement_properties)
-# TODO: change the starting angle at which the fist fault occurs
-
-m = Measurement()
-measurement = m.get_measurements()
-
-# TODO: Potentially making error at the edges when convolving (need to include additional pulses than requested by the user to adress this issue)
-
-# measured = scipy.signal.decimate(measurement, 2, axis=1, ftype="fir")
-
-plt.figure()
-# plt.plot(indexes_at_which_impulses_occur[0]*np.max(convolved[0]))
-plt.plot(measurement[0])
-
-# TODO: Todo need to add amplitude modulation for the inner race fault.
 

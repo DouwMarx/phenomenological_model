@@ -1,0 +1,28 @@
+fault_information:
+  fault_severity: 1
+  fault_type: 'ball'
+  # q_amp_mod: 0.3 # Amplitude modulation due to load # TODO: Add amplitude modulation
+
+stochastic_properties:
+  slip_variance_factor: 0 # Variance for the generation of the random contribution (How regular is the excitations from the bearing fault)
+  measurement_noise_variance : 0.1 # Variance of the additive Gaussian measurement noise.
+
+bearing_geometry:
+  d : 8.4  # bearing roller diameter [mm]
+  D : 71.5  # pitch circle diameter [mm]
+  n_ball : 16  # number of rolling elements
+  contact_angle : 0.2740166925631097  #15.7*np.pi/180  # contact angle
+
+measurement_properties:
+  sampling_frequency : 38400 # sample frequency [Hz]
+  t_duration: 1 # time duration of measurement [s]
+  n_measurements: 5 # number of measurements to take in "parallel"
+
+transient_response_properties:
+  k : 2.0e+13 # SDOF spring stiffness [N/m]
+  zeta : 0.05 # SDOF damping ratio
+  fn : 4230  # SDOF natural frequency [Hz]
+
+operating_condition:
+  speed_profile_type: "constant"
+

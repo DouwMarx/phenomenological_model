@@ -171,6 +171,8 @@ class SdofSys():
         """
         super().__init__(**kwargs)
         m = k / (2 * np.pi * fn) ** 2
+
+        self.fault_severity = fault_severity
         F = fault_severity
         self.zeta = zeta
 
@@ -191,21 +193,24 @@ class SdofSys():
         -------
 
         """
-        xt = self.A / self.omegad * np.exp(-self.zeta * self.omegan * self.t_range) * np.sin(
-            self.omegad * self.t_range)  # displacement
-        xd = np.hstack([[0], np.diff(xt) * self.master_sample_frequency])  # velocity
-        sdof_reponse = np.hstack(
-            [[0], np.diff(xd) * self.master_sample_frequency])  # acceleration #TODO: Use the analytical formula and not double integration
+        # xt = self.A / self.omegad * np.exp(-self.zeta * self.omegan * self.t_range) * np.sin(
+        #     self.omegad * self.t_range)  # displacement
+        # xd = np.hstack([[0], np.diff(xt) * self.master_sample_frequency])  # velocity
+        # sdof_reponse = np.hstack(
+        #     [[0], np.diff(xd) * self.master_sample_frequency])  # acceleration #TODO: Use the analytical formula and not double integration
 
-        sdof_reponse = -self.zeta * np.exp(-self.omegan * self.t_range * self.zeta) * np.sin(
-            self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) / (
-                    2 * np.sqrt(np.abs(self.zeta ** 2 - 1))) + np.exp(-self.omegan * self.t_range * self.zeta) * np.cos(
-            self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) + np.exp(
-            -self.omegan * self.t_range * self.zeta) * np.sin(
-            self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) * np.sqrt(np.abs(self.zeta ** 2 - 1)) / (
-                    2 * self.zeta)
+        # sdof_reponse = -self.zeta * np.exp(-self.omegan * self.t_range * self.zeta) * np.sin(
+        #     self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) / (
+        #             2 * np.sqrt(np.abs(self.zeta ** 2 - 1))) + np.exp(-self.omegan * self.t_range * self.zeta) * np.cos(
+        #     self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) + np.exp(
+        #     -self.omegan * self.t_range * self.zeta) * np.sin(
+        #     self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) * np.sqrt(np.abs(self.zeta ** 2 - 1)) / (
+        #             2 * self.zeta)
 
-        return sdof_reponse
+        # TODO: Below is a temporary fix, Assumption that the acceleration starts from 0 and then increases, fault severity is max of transient
+        sdof_response = np.exp(-self.zeta * self.omegan * self.t_range) * np.sin(self.omegad * self.t_range)  # displacement
+        sdof_response = sdof_response/np.max(sdof_response)
+        return self.fault_severity*sdof_response
         # return np.ones(np.shape(sdof_reponse))
 
 

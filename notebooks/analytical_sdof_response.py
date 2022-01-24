@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import sympy
 import sympy as sym
 
@@ -28,7 +30,10 @@ from sympy import Symbol
 # v_0_for_t0_d0 = solve(xdotdot0 - 1, v_0)
 
 # If we let initial acceleration be equal to 1
+# v_0_for_t0_d0 = -1/(2*omega_n*zeta)
+
 v_0_for_t0_d0 = -1/(2*omega_n*zeta)
+
 
 print(xdotdot)
 print(xdotdot0)
@@ -48,6 +53,10 @@ numpy_str = numpy_str.replace("omega_n","self.omegan")
 numpy_str = numpy_str.replace("Abs","np.abs")
 numpy_str = numpy_str.replace("*t","*self.t_range")
 
-print("")
 
-print(numpy_str)
+ldf = sympy.lambdify([t,zeta,omega_n],xdotdot_implement)
+
+r = [ldf(t,0.01,1000) for t in np.linspace(0,1,1000)]
+
+plt.figure()
+plt.plot(r)

@@ -12,7 +12,7 @@ function [sdofRespTime] = sdofResponse(fs,k,zita,fn,Lsdof)
 % Output:
 % sdofRespTime = acceleration (row vector)
 %
-% G. D’Elia and M. Cocconcelli
+% G. Dï¿½Elia and M. Cocconcelli
 
 m = k/(2*pi*fn)^2;
 F = 1;
@@ -25,3 +25,6 @@ t = (0:Lsdof-1)/fs;
 xt = A/omegad * exp(-zita*omegan*t).*sin(omegad*t); % displacement
 xd = [0 diff(xt)*fs]; % velocity
 sdofRespTime = [0 diff(xd)*fs]; % acceleration
+
+# I am not 100% convinded that the numerical differentiation of the time reponse is a good idea. Exponential decay makes integration behave stragely.
+# Will rather try analytical

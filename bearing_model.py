@@ -107,6 +107,13 @@ class SpeedProfile():
         print("speed profile init ran")
 
     def set_angles(self):
+        """
+        Compute the angles at a given master sample.
+        Do this for each of the measurements.
+        Returns
+        -------
+
+        """
         self.angles = self.get_angle_as_function_of_time()
         self.total_angle_traversed = self.get_total_angle_traversed()
 
@@ -189,7 +196,17 @@ class SdofSys():
         xd = np.hstack([[0], np.diff(xt) * self.master_sample_frequency])  # velocity
         sdof_reponse = np.hstack(
             [[0], np.diff(xd) * self.master_sample_frequency])  # acceleration #TODO: Use the analytical formula and not double integration
+
+        sdof_reponse = -self.zeta * np.exp(-self.omegan * self.t_range * self.zeta) * np.sin(
+            self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) / (
+                    2 * np.sqrt(np.abs(self.zeta ** 2 - 1))) + np.exp(-self.omegan * self.t_range * self.zeta) * np.cos(
+            self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) + np.exp(
+            -self.omegan * self.t_range * self.zeta) * np.sin(
+            self.omegan * self.t_range * np.sqrt(np.abs(self.zeta ** 2 - 1))) * np.sqrt(np.abs(self.zeta ** 2 - 1)) / (
+                    2 * self.zeta)
+
         return sdof_reponse
+        # return np.ones(np.shape(sdof_reponse))
 
 
 class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that matter
@@ -242,6 +259,16 @@ class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that ma
             impulse_distances_for_measurement < total_angle_traversed_for_measurement]
 
     def indexes_which_impulse_occur_for_all_measurement(self, angular_distances_at_which_impulses_occur):
+        """
+        Loop over all measurements to get the indexes for which impulses occur.
+        Parameters
+        ----------
+        angular_distances_at_which_impulses_occur
+
+        Returns
+        -------
+
+        """
         indexes_at_which_impulses_occur = np.zeros((self.n_measurements,
                                                     self.n_master_samples))  # Initialize empty array that show (master) samples where impulses will occur
         for measurement in range(self.n_measurements):
@@ -261,8 +288,37 @@ class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that ma
 
         return indexes_at_which_impulses_occur
 
+class Modulate():
+    def __init__(self, modulation_amplitude,angle_based_modulation_frequency,**kwargs):
+        super().__init__(**kwargs)
 
-class Measurement(Bearing,Impulse, SdofSys,SpeedProfile):#, Impulse):
+        self.modulation_amplitude = modulation_amplitude
+        self.angle_based_modulation_frequency = angle_based_modulation_frequency
+        return
+
+    def get_normalized_modulation_signal(self, angles_for_all_measurements):
+        """
+        Computes the angle dependent modulation signal scaled between 0 and 1
+        This is computed for all measurements
+        Parameters
+        ----------
+        angles_for_all_measurements
+
+        Returns
+        -------
+
+        """
+        return 0.5*(1+np.cos(self.angle_based_modulation_frequency*2*np.pi*angles_for_all_measurements))
+
+    def modulate_impulses_per_sample(self,impulses,angles_for_all_measurement):
+        return impulses*self.get_normalized_modulation_signal(angles_for_all_measurement)*self.modulation_amplitude
+
+
+
+
+
+
+class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
     """
     Class used to define the properties of the dataset that will be simulated. Used to manage the overall data generation
     """
@@ -314,8 +370,10 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile):#, Impulse):
         Returns
         -------
         """
-        required_parameters = ['fault_severity',
+        keys_required = ['fault_severity',
                                'fault_type',
+                               'modulation_amplitude',
+                               'angle_based_modulation_frequency',
                                'slip_variance_factor',
                                'measurement_noise_variance',
                                'd',
@@ -330,7 +388,13 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile):#, Impulse):
                                'fn',
                                'speed_profile_type']
 
-        print(kwargs.keys())
+        keys_available = (kwargs.keys())
+
+        complement =list(set(keys_required) - set(keys_available))
+        print(complement)
+
+        if len(complement) > 0:
+            raise ValueError("To few or too many parameters")
 
 
     def get_measurements(self):
@@ -354,8 +418,18 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile):#, Impulse):
 
         indexes = self.indexes_which_impulse_occur_for_all_measurement(angular_distances_at_which_impulses_occur)
 
+        print("Max index",np.max(indexes))
+
+        if self.fault_type == "inner": # If the fault time ivolves modulation, do modulation
+            print("Yo dude you have inner fault man")
+
+            modulation_signal = self.modulate_impulses_per_sample(indexes,self.angles)
+            indexes = modulation_signal
+
+
         # Get the transient response for the SDOF system
         transient = self.get_transient_response()
+        print("Max of transiet", max(transient))
 
         # Convolve the transient with the impulses
 
@@ -363,7 +437,10 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile):#, Impulse):
         # # convolved2 = scipy.signal.convolve(indexes_at_which_impulses_occur, transient.reshape(1,-1), mode="same")
         # return convolved
 
-        measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="fir") # Subsample from the master sample rate to the actual sample rate
+        # measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="fir") # Subsample from the master sample rate to the actual sample rate
+        # measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="iir") # Subsample from the master sample rate to the actual sample rate
+        # measured = convolved[:,::2] # Subsampling (get every second sample)
+        measured = convolved
 
         return measured
 

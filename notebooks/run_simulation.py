@@ -17,7 +17,7 @@ meas = measurement_obj.get_measurements()
 
 np.save(definitions.data_write_dir,{"data":meas,"meta_data":simulation_properties})
 
-# plt.figure()
-# # plt.plot(indexes_at_which_impulses_occur[0]*np.max(convolved[0]))
-# plt.plot(meas[0])
+plt.figure()
+# plt.plot(indexes_at_which_impulses_occur[0]*np.max(convolved[0]))
+plt.plot(meas[0])
 

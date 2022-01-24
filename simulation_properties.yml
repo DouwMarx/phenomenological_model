@@ -1,7 +1,9 @@
 fault_information:
   fault_severity: 1
-  fault_type: 'ball'
+  fault_type: 'inggner'
   # q_amp_mod: 0.3 # Amplitude modulation due to load # TODO: Add amplitude modulation
+  modulation_amplitude: 1
+  angle_based_modulation_frequency: 0.01
 
 stochastic_properties:
   slip_variance_factor: 0 # Variance for the generation of the random contribution (How regular is the excitations from the bearing fault)
@@ -14,8 +16,8 @@ bearing_geometry:
   contact_angle : 0.2740166925631097  #15.7*np.pi/180  # contact angle
 
 measurement_properties:
-  sampling_frequency : 300 #38400 # sample frequency [Hz]
-  t_duration: 1 #20 # time duration of measurement [s]
+  sampling_frequency : 100000 # 38400 # 300 #38400 # sample frequency [Hz]
+  t_duration: 2 #20 # time duration of measurement [s]
   n_measurements: 2 # number of measurements to take in "parallel"
 
 transient_response_properties:

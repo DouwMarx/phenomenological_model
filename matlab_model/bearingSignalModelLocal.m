@@ -92,6 +92,7 @@ x = zeros(1,L);
 x(indexImpulses) = 1; # Set all indices where a impulse will occur equal to 1
 
 % amplitude modulation
+# My understanding of the amplitude modulation is that there is a angle dependent function that modifies the amplitude of the impulses in the impulse train.
 if strcmp(faultType,'inner')
     if length(fc) > 1, # If the length of the carrier component of the speed is not a scalar:
         thetaTime = zeros(1,length(fr));
@@ -103,7 +104,7 @@ if strcmp(faultType,'inner')
         fmTime = interp1(thetaTime,fm,t,'spline');
         q = 1 + qAmpMod * cos(2*pi*fcTime.*t + 2*pi*fdTime.*(cumsum(cos(2*pi*fmTime.*t)/fs)));
     else  #If the the carrier component of the speed is just a scalar. This means there is no load variation?
-        q = 1 + qAmpMod * cos(2*pi*fc*t + 2*pi*fd*(cumsum(cos(2*pi*fm*t)/fs)));
+        q = 1 + qAmpMod * cos(2*pi*fc*t + 2*pi*fd*(cumsum(cos(2*pi*fm*t)/fs))); # 1+ since cos is -1 -> 1
     end
     x = q.*x;
 end

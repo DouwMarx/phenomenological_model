@@ -5,11 +5,14 @@ import scipy
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
 from src.utils.search import find_nearest_index
+import pickle
 import yaml
 
-# TODO: Potentially making error at the edges when convolving (need to include additional pulses than requested by the user to adress this issue)
 # TODO: Todo need to add amplitude modulation for the inner race fault.
-# TODO: Let a global class inherit from a measurement object
+
+# TODO: Potentially making error at the edges when convolving (need to include additional pulses than requested by the user to adress this issue)
+
+# TODO: Let a global class inherit from a measurement object, perhaps call it Dataset
 
 
 class Bearing():
@@ -114,7 +117,7 @@ class SpeedProfile():
         return profiles[self.speed_profile_type]()  # Compute the appropriate speed profile
 
     def constant(self):
-        constant_speed = 100 * 2 * np.pi / 60  # 100 RPM in rad/s
+        constant_speed = 500 * 2 * np.pi / 60  # 1000 RPM in rad/s
         return np.ones((self.n_measurements, self.n_master_samples)) * constant_speed
 
     def sine(self):
@@ -339,6 +342,8 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile):#, Impulse):
         Measurements array (number_of_measurements,number_of_samples)
         """
 
+        #TODO: Rework some of the code below into the impulse class for clarity
+
         self.set_angles()  # Compute the angles from the speed profile
         average_angular_distance_between_impulses = self.get_angular_distance_between_impulses("ball")
         expected_number_of_impulses_during_measurement = self.total_angle_traversed / average_angular_distance_between_impulses
@@ -356,9 +361,14 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile):#, Impulse):
 
         convolved = scipy.signal.convolve2d(indexes, transient.reshape(1, -1), mode="same")
         # # convolved2 = scipy.signal.convolve(indexes_at_which_impulses_occur, transient.reshape(1,-1), mode="same")
+        # return convolved
 
+        measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="fir") # Subsample from the master sample rate to the actual sample rate
 
-        # # measured = scipy.signal.decimate(measurement, 2, axis=1, ftype="fir") # Subsample from the master sample rate to the actual sample rate
+        return measured
+
                                                                                   # Low pass filter to prevent ani-aliasing
-        return convolved
 
+    # def generate_data_and_export(self):
+    #     p
+    #

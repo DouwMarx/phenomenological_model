@@ -107,8 +107,6 @@ class SpeedProfile():
 
         self.speed_profile_type = speed_profile_type
 
-        print("speed profile init ran")
-
     def set_angles(self):
         """
         Compute the angles at a given master sample.
@@ -185,7 +183,7 @@ class SdofSys():
         self.omegan = 2 * np.pi * fn
         self.omegad = self.omegan * np.sqrt(1 - zeta ** 2)
 
-        percentage = 0.01  # Percentage of the original amplitude to decay to
+        percentage = 0.01  # Percentage of the original amplitude to decay to # TODO: Add to kwargs
         self.transient_duration = np.log(1 / percentage) / (self.zeta * self.omegan)
 
         self.transient_time= np.linspace(0, self.transient_duration, int(self.transient_duration * self.master_sample_frequency))
@@ -429,10 +427,8 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
 
         indexes = self.indexes_which_impulse_occur_for_all_measurement(angular_distances_at_which_impulses_occur)
 
-        print("Max index",np.max(indexes))
 
         if self.fault_type == "inner": # If the fault time ivolves modulation, do modulation
-            print(" inner fault")
 
             modulation_signal = self.modulate_impulses_per_sample(indexes, self.angles)
             indexes = modulation_signal
@@ -440,7 +436,6 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
 
         # Get the transient response for the SDOF system
         transient = self.get_transient_response()
-        print("Max of transient", max(transient))
 
         # Convolve the transient with the impulses
 

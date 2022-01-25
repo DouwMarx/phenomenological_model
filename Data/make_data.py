@@ -61,10 +61,10 @@ def envelope(array):
 
 
 class PyBearingDatasest():
-    def __init__(self, n_samples_test, n_samples_train, n_severities,failure_modes):
+    def __init__(self, n_severities,failure_modes):
         self.simulation_properties = get_simulation_properties()
-        self.n_samples_test = n_samples_test
-        self.n_samples_train = n_samples_train
+        # self.n_samples_test = n_samples_test
+        # self.n_samples_train = n_samples_train
         self.n_severities = n_severities
         self.failure_modes = failure_modes
 
@@ -95,7 +95,8 @@ class PyBearingDatasest():
 
         # Define the measurement
 
-        meas = Measurement(**modified_simulation_properties).get_measurements() # Get the time_domain measurements
+        mobj = Measurement(**modified_simulation_properties)
+        meas = mobj.get_measurements() # Get the time_domain measurements
 
         np.linalg.norm(meas)
         # np.mean(meas)# = meas
@@ -107,7 +108,10 @@ class PyBearingDatasest():
         env = envelope(meas)
 
         # Create a dictionary with different flavours of the same data as well as meta data
-        meas_dict = {"time_domain":meas,
+
+        modified_simulation_properties.update(mobj.meta_data) # Add derived meta-data to the meta data for later use # TODO: build this functionality into the bearing class
+
+        meas_dict = {"time_domain": meas,
                      # "squared_envelope":{"freq":freq,
                      #                     "mag":mag,
                      #                     "phase":phase},
@@ -118,7 +122,7 @@ class PyBearingDatasest():
         # return meas
 
     def make_measurements_for_different_severity(self, properties_to_modify):
-        severity_range = np.linspace(0.1, 1, self.n_severities)
+        severity_range = np.linspace(0, 1, self.n_severities)
 
         """ For different severities of the same failure mode, compute many samples for each severity"""
         severity_dict = {}
@@ -159,10 +163,7 @@ class PyBearingDatasest():
 
 
 
-
-# if __name__ == "__main__":
-
-
+# TODO: The generation of the envelope spectrum using the hilbert transform delivers differernt results for consequent runs and I cannot understand it
     # o = PyBearingDatasest(n_samples_test=4, n_samples_train=4, n_severities=3, failure_modes=["ball","inner"])
     # properties_to_modify = {"fault_type":"inner","fault_severity":1}
     # r = o.make_measurements_for_condition(properties_to_modify)
@@ -172,22 +173,12 @@ class PyBearingDatasest():
     # properties_to_modify = {"fault_type":"inner","fault_severity":1}
     # rb = ob.make_measurements_for_condition(properties_to_modify)
     # print(np.isnan(rb["envelope"]).sum())
-    #
-    # ob = PyBearingDatasest(n_samples_test=4, n_samples_train=4,n_severities=3,failure_modes=["ball","inner"])
-    # properties_to_modify = {"fault_type":"inner","fault_severity":1}
-    # rb = ob.make_measurements_for_condition(properties_to_modify)
-    # print(np.isnan(rb["envelope"]).sum())
 
-# ses = r["squared_envelope"]["mag"]
-#
-
-# d = o.make_measurements_for_different_severity(properties_to_modify)
-# print(d.keys())
-
-o = PyBearingDatasest(n_samples_test=4, n_samples_train=4, n_severities=3, failure_modes=["ball","inner"])
+o = PyBearingDatasest(n_severities=2, failure_modes=["ball","inner"])
 properties_to_modify = {"fault_type":"inner","fault_severity":1}
 results_dictionary = o.make_measurements_for_different_failure_mode(properties_to_modify)
 
+plt.figure()
 
 for mode,dictionary in results_dictionary.items():
     print(mode)
@@ -198,3 +189,15 @@ for mode,dictionary in results_dictionary.items():
         freq,mag,phase= sq_env_spec(t_sig,fs=o.simulation_properties["sampling_frequency"])
         print(np.isnan(mag).sum())
         results_dictionary[mode][severity]["envelope"] = env
+
+        plt.plot(freq,mag[0], label = mode + " " + severity)
+
+for mode,dictionary in results_dictionary.items():
+    for severity, measurements in dictionary.items():
+        meta_data = measurements["meta_data"]
+        fault_freq = meta_data["derived"]["average_fault_frequency"]
+
+        plt.vlines(fault_freq,0,0.1, label=mode + " ff")
+plt.legend()
+
+

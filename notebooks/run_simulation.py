@@ -57,7 +57,7 @@ plt.figure()
 plt.plot(freq,mag)
 
 impulse_per_rev = measurement_obj.meta_data["derived"]["geometry_factor"]
-fr = np.mean(measurement_obj.get_rotation_frequency_as_function_of_time())/(2*np.pi) # revs/s
+fr = np.mean(measurement_obj.get_rotation_frequency_as_function_of_time())/(2*np.pi) # revs/s # TODO: Rotation frequency is currently in rad/s? Could rather call it angular speed?
 
 fault_freq =impulse_per_rev*fr
 

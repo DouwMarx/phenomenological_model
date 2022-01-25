@@ -369,7 +369,8 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
 
         # Set some derived parameters as meta data
         self.meta_data = {"derived": {
-            "geometry_factor": self.get_geometry_parameter(self.fault_type)
+            "geometry_factor": self.get_geometry_parameter(self.fault_type),
+            "average_fault_frequency": np.average(self.get_rotation_frequency_as_function_of_time())*self.get_geometry_parameter(self.fault_type)/(2*np.pi)
         }}
 
     def check_input_parameters(self,**kwargs):

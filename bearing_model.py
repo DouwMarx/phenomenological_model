@@ -42,26 +42,30 @@ class Bearing():
         self.geometry_parameters = {"inner": self.get_inner_race_parameter,
                                     "outer": self.get_outer_race_parameter,
                                     "ball": self.get_ball_parameter}
+        # print("bearing init ran")
 
-        print("bearing init ran")
 
+    # TODO: This definition is strange
+    # Ideally it would be factor = f_impulse/f_rotation
+
+    # TODO:Double check the fault frequencies. There was mistake?
     def get_inner_race_parameter(self):
         """
         Fault characteristic for inner race fault
         """
-        return 1 / 2 * (1 + self.d / self.D * np.cos(self.contact_angle))
+        return self.n_ball / 2 * (1 + self.d / self.D * np.cos(self.contact_angle))
 
     def get_outer_race_parameter(self):
         """
         Fault characteristic for outer race fault
         """
-        return 1 / 2 * (1 - self.d / self.D * np.cos(self.contact_angle))
+        return  self.n_ball / 2 * (1 - self.d / self.D * np.cos(self.contact_angle))
 
     def get_ball_parameter(self):
         """
         Fault characteristic for ball fault
         """
-        return 1 / (2 * self.n_ball) * (1 - (self.d / self.D * np.cos(self.contact_angle)) ** 2) / (self.d / self.D)
+        return  self.D / (2*self.d) * (1 - (self.d / self.D * np.cos(self.contact_angle)) ** 2)
 
     def get_geometry_parameter(self, fault_type):
         """
@@ -82,8 +86,7 @@ class Bearing():
         -------
         """
 
-        geometry_parameter = self.get_geometry_parameter(fault_type)
-        impulses_per_revolution = geometry_parameter * self.n_ball
+        impulses_per_revolution = self.get_geometry_parameter(fault_type)
 
         average_angular_distance_between_impulses = 2 * np.pi / impulses_per_revolution
         # (rads/rev)/(impulses/rev) = rads/impulse
@@ -124,12 +127,12 @@ class SpeedProfile():
         return profiles[self.speed_profile_type]()  # Compute the appropriate speed profile
 
     def constant(self):
-        constant_speed = 500 * 2 * np.pi / 60  # 1000 RPM in rad/s
+        constant_speed = 500 * 2 * np.pi / 60  # 500 RPM in rad/s
         return np.ones((self.n_measurements, self.n_master_samples)) * constant_speed
 
     def sine(self):
         f = 5
-        mean_speed = 100 * 2 * np.pi / 60  # 100 RPM in rad/s
+        mean_speed = 100 * 2 * np.pi / 60  # 100 RPM in rad/s | revs/min * rads/rev * 2pi rads/rev * min/60s
         profile = mean_speed + np.sin(self.time * 2 * np.pi * f) * mean_speed * 0.9
         return np.outer(np.ones(self.n_measurements), profile)
 
@@ -169,6 +172,8 @@ class SdofSys():
         t_end > log(1/percentage)/(-zeta*omegan)
 
         """
+
+        # TODO: make sure I use a different name than trange since the global time is something like time
         super().__init__(**kwargs)
         m = k / (2 * np.pi * fn) ** 2
 
@@ -183,7 +188,7 @@ class SdofSys():
         percentage = 0.01  # Percentage of the original amplitude to decay to
         self.transient_duration = np.log(1 / percentage) / (self.zeta * self.omegan)
 
-        self.t_range = np.linspace(0, self.transient_duration, int(self.transient_duration * self.master_sample_frequency))
+        self.transient_time= np.linspace(0, self.transient_duration, int(self.transient_duration * self.master_sample_frequency))
 
     def get_transient_response(self):
         """
@@ -208,7 +213,7 @@ class SdofSys():
         #             2 * self.zeta)
 
         # TODO: Below is a temporary fix, Assumption that the acceleration starts from 0 and then increases, fault severity is max of transient
-        sdof_response = np.exp(-self.zeta * self.omegan * self.t_range) * np.sin(self.omegad * self.t_range)  # displacement
+        sdof_response = np.exp(-self.zeta * self.omegan * self.transient_time) * np.sin(self.omegad * self.transient_time)  # displacement
         sdof_response = sdof_response/np.max(sdof_response)
         return self.fault_severity*sdof_response
         # return np.ones(np.shape(sdof_reponse))
@@ -368,6 +373,12 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
         self.time = np.linspace(0, self.t_duration,
                                 self.n_master_samples)  # Time vector based on master sample rate.
 
+
+        # Set some derived parameters as meta data
+        self.meta_data = {"derived": {
+            "geometry_factor": self.get_geometry_parameter(self.fault_type)
+        }}
+
     def check_input_parameters(self,**kwargs):
         """
         Check which of the entries of the provided dictionary might be missing.
@@ -414,7 +425,7 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
         #TODO: Rework some of the code below into the impulse class for clarity
 
         self.set_angles()  # Compute the angles from the speed profile
-        average_angular_distance_between_impulses = self.get_angular_distance_between_impulses("ball")
+        average_angular_distance_between_impulses = self.get_angular_distance_between_impulses(self.fault_type)
         expected_number_of_impulses_during_measurement = self.total_angle_traversed / average_angular_distance_between_impulses
 
         angular_distances_at_which_impulses_occur = self.get_angular_distances_at_which_impulses_occur(
@@ -426,15 +437,15 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
         print("Max index",np.max(indexes))
 
         if self.fault_type == "inner": # If the fault time ivolves modulation, do modulation
-            print("Yo dude you have inner fault man")
+            print(" inner fault")
 
-            modulation_signal = self.modulate_impulses_per_sample(indexes,self.angles)
+            modulation_signal = self.modulate_impulses_per_sample(indexes, self.angles)
             indexes = modulation_signal
 
 
         # Get the transient response for the SDOF system
         transient = self.get_transient_response()
-        print("Max of transiet", max(transient))
+        print("Max of transient", max(transient))
 
         # Convolve the transient with the impulses
 
@@ -444,8 +455,8 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
 
         # measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="fir") # Subsample from the master sample rate to the actual sample rate
         # measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="iir") # Subsample from the master sample rate to the actual sample rate
-        # measured = convolved[:,::2] # Subsampling (get every second sample)
-        measured = convolved
+        measured = convolved[:,::2] # Subsampling (get every second sample)
+        # measured = convolved
 
         return measured
 

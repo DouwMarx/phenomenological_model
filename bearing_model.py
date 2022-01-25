@@ -323,11 +323,6 @@ class Modulate():
     def modulate_impulses_per_sample(self,impulses,angles_for_all_measurement):
         return impulses*self.get_normalized_modulation_signal(angles_for_all_measurement)*self.modulation_amplitude
 
-
-
-
-
-
 class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
     """
     Class used to define the properties of the dataset that will be simulated. Used to manage the overall data generation

@@ -16,9 +16,9 @@ bearing_geometry:
   contact_angle : 0.2740166925631097  #15.7*np.pi/180  # contact angle
 
 measurement_properties:
-  sampling_frequency :  38400 # 300 #38400 # sample frequency [Hz]
-  t_duration: 2 #20 # time duration of measurement [s]
-  n_measurements: 4 # number of measurements to take in "parallel"
+  sampling_frequency : 10000 # 38400 # 300 #38400 # sample frequency [Hz]
+  t_duration: 0.1 #2 #20 # time duration of measurement [s]
+  n_measurements: 2 # number of measurements to take in "parallel"
 
 transient_response_properties:
   k : 2.0e+13 # SDOF spring stiffness [N/m]

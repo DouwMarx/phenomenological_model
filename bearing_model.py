@@ -364,7 +364,7 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
 
         self.n_measurement_samples = self.t_duration * self.sampling_frequency  # Total number of samples over the measurment interval
 
-        self.n_master_samples = self.t_duration * self.master_sample_frequency  # Total number of samples of the master samples "continuous time".
+        self.n_master_samples = int(self.t_duration * self.master_sample_frequency)  # Total number of samples of the master samples "continuous time".
         self.time = np.linspace(0, self.t_duration,
                                 self.n_master_samples)  # Time vector based on master sample rate.
 

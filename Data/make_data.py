@@ -18,11 +18,6 @@ class PyBearingDatasest():
         self.n_severities = n_severities
         self.failure_modes = failure_modes
 
-        # # Set up the system for the healthy case
-        # self.sys_properties_healthy = sys_properties
-        # self.sys_properties_healthy["fault_information"]["fault_severity"] = 0
-        # self.sys_properties_healthy["fault_information"]["q_amp_mod"] = 0
-
 
     # fs = simulation_properties["sampling_frequency"]
 
@@ -39,13 +34,24 @@ class PyBearingDatasest():
 
         """
 
+        # Make a copy of the default simulation properties
         modified_simulation_properties = self.simulation_properties.copy()
 
+        # Update the simulation properties with the properties that are of interest for the current simulation
         modified_simulation_properties.update(properties_to_modify)
 
+        # Define the measurement
         measurement_obj = Measurement(**modified_simulation_properties)
-        meas = measurement_obj.get_measurements()
-        return meas
+        meas = measurement_obj.get_measurements() # Get the time_domain measurements
+
+
+
+        # Create a dictionary with different flavours of the same data as well as meta data
+        meas_dict = {"time_domain":meas,
+                     "meta_data":modified_simulation_properties}
+
+        return meas_dict
+        # return meas
 
     def make_measurements_for_different_severity(self, properties_to_modify):
         severity_range = np.linspace(0,1,self.n_severities)
@@ -101,18 +107,17 @@ def fft(data, fs):
     phase:
     """
 
-    d = data
-    length = len(d)
-    Y = np.fft.fft(d) / length
-    magnitude = np.abs(Y)[0:int(length / 2)]
-    phase = np.angle(Y)[0:int(length / 2)]
+    length = data.shape[1]
+    Y = np.fft.fft(data,axis=1) / length
+    magnitude = np.abs(Y)[:,0:int(length / 2)]
+    phase = np.angle(Y)[:,0:int(length / 2)]
     freq = np.fft.fftfreq(length, 1 / fs)[0:int(length / 2)]
     return freq, magnitude, phase
 
-def sq_env_spec(signal,fs):
-    analytic_signal = hilbert(signal)
+def sq_env_spec(signals,fs):
+    analytic_signal = hilbert(signals,axis=1)
     amplitude_envelope = np.abs(analytic_signal)
-    amplitude_envelope = detrend(amplitude_envelope)
+    amplitude_envelope = detrend(amplitude_envelope,axis=1)
 
     freq, mag, phase = fft(amplitude_envelope, fs)
 

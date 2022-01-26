@@ -365,15 +365,20 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
         self.n_measurement_samples = self.t_duration * self.sampling_frequency  # Total number of samples over the measurment interval
 
         self.n_master_samples = int(self.t_duration * self.master_sample_frequency)  # Total number of samples of the master samples "continuous time".
+
         self.time = np.linspace(0, self.t_duration,
                                 self.n_master_samples)  # Time vector based on master sample rate.
+
+        self.measured_time = self.time[::2]  # The measured time is sampled at half the simulation time (continuous time).
 
 
         # Set some derived parameters as meta data
         self.meta_data = {"derived": {
             "geometry_factor": self.get_geometry_parameter(self.fault_type),
             "average_fault_frequency": np.average(self.get_rotation_frequency_as_function_of_time())*self.get_geometry_parameter(self.fault_type)/(2*np.pi)
-        }}
+        },
+            "measured_time": self.measured_time
+        }
 
     def check_input_parameters(self,**kwargs):
         """

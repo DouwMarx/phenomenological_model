@@ -33,6 +33,7 @@ def augmentation_signals(mode,severity,results_dict):
     healthy_ses = results_dict[mode]["0"]["envelope_spectrum"]["mag"]# [0] # Use the first one
 
     ases = AugmentedSES(healthy_ses=healthy_ses,fs=fs,fault_frequency=expected_fault_frequency, peak_magnitude=0.03)
+    print(ases.freqs.shape)
 
     envelope_specturm = ases.get_augmented_ses()
     return {"augmented_envelope_spectrum":{"freq":ases.freqs,

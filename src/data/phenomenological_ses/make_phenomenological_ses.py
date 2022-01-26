@@ -5,7 +5,11 @@ import numpy as np
 class AugmentedSES():
     def __init__(self,healthy_ses = None,fs=38400, fault_frequency = 74,percentage_of_freqs_to_decay_99_percent = 0.1, peak_magnitude=1):
         self.fs = fs
-        self.freqs = np.arange(0, int(fs / 2))
+        # self.freqs = np.arange(0, int(fs / 2))
+
+        self.siglen = healthy_ses.shape[1]*2
+        self.freqs = np.fft.fftfreq(self.siglen, 1 / fs)[0:int(self.siglen/ 2)]
+
         self.fault_frequency = fault_frequency
 
         self.healthy_ses = healthy_ses
@@ -32,7 +36,7 @@ class AugmentedSES():
         # percentage = 0.01  # Percentage of the original amplitude to decay to # TODO: Add to kwargs
         # self.transient_duration = np.log(1 / percentage) / (self.zeta * self.omegan)
 
-        freq_index_99_decay = int(self.percentage_of_freqs_to_decay_99_percent*self.fs*0.5)
+        freq_index_99_decay = int(self.percentage_of_freqs_to_decay_99_percent*self.siglen*0.5)
 
         #np.exp(self.freqs[-1]*scaling) = 0.01
         scaling = np.log(0.01)/self.freqs[freq_index_99_decay]

@@ -331,7 +331,7 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
                  n_measurements,
                  t_duration,
                  sampling_frequency,
-                 measurement_noise_variance,
+                 measurement_noise_standard_deviation,
                  **kwargs):
         """
 
@@ -343,6 +343,8 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
         """
 
         # self.check_input_parameters(**kwargs) # TODO: need to run a check that gives the user information if the wrong arguments are provided
+
+        self.measurement_noise_standard_deviation = measurement_noise_standard_deviation
 
         # Sampling properties
         self.sampling_frequency = sampling_frequency
@@ -407,6 +409,10 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
             raise ValueError("To few or too many parameters")
 
 
+    def add_measurement_noise(self,array):
+        return np.random.normal(array,self.measurement_noise_standard_deviation)
+
+
     def get_measurements(self):
         """
         Compute the measurement set for the given parameters
@@ -447,9 +453,12 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
         # measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="fir") # Subsample from the master sample rate to the actual sample rate
         # measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="iir") # Subsample from the master sample rate to the actual sample rate
         measured = convolved[:,::2] # Subsampling (get every second sample)
-        # measured = convolved
+
+        # Add measurement noise
+        measured = self.add_measurement_noise(measured)
 
         return measured
+
 
                                                                                   # Low pass filter to prevent ani-aliasing
 

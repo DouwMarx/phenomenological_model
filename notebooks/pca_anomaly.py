@@ -2,12 +2,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
 from definitions import data_dir
+import plotly.graph_objs as go
 
 def remove_dc(arr):
-    return arr[:,1:]
+    siglen = arr.shape[1]
+    use = int(siglen/4)
+    return arr[:,1:use]
 
 # Loading the dataset
-data = np.load(data_dir.joinpath("generated_and_augmented.npy"),allow_pickle=True)[()]
+# data = np.load(data_dir.joinpath("generated_and_augmented.npy"),allow_pickle=True)[()]
+data = np.load(data_dir.joinpath("generated_and_augmented_rapid_iter.npy"),allow_pickle=True)[()]
 
 # Define models
 model_healthy_only = PCA(2)
@@ -15,7 +19,7 @@ model_healthy_and_augmented = PCA(2)
 
 # Set up training data
 all_healthy = [data[mode]["0"]["envelope_spectrum"]["mag"] for mode in list(data.keys())]
-healthy_train= remove_dc(np.vstack(all_healthy)) # Healthy data from different "modes" even though modes dont technically exist when healthy
+healthy_train = remove_dc(np.vstack(all_healthy)) # Healthy data from different "modes" even though modes dont technically exist when healthy
 
 all_augmented_modes = [data[mode]["1"]["augmented_envelope_spectrum"]["mag"] for mode in list(data.keys())]
 augmented_and_healthy_train = remove_dc(np.vstack(all_healthy + all_augmented_modes))
@@ -48,6 +52,8 @@ testing_sets = [healthy_test,
                 ball_test,inner_test,outer_test,
                 ball_augment,inner_augment,outer_augment,
                 ]
+##
+
 
 # Do predictions
 for mode_test_set, name in zip(testing_sets,modes):
@@ -55,20 +61,29 @@ for mode_test_set, name in zip(testing_sets,modes):
     encoding_dict_healthy_and_augmented.update({name:model_healthy_and_augmented.transform(mode_test_set)})
 
 
-plt.figure()
-plt.title("Healthy only model")
-for mode in modes:
-    encoding = encoding_dict_healthy_only[mode]
-    plt.scatter(encoding[:,0],encoding[:,1],label=mode)
-plt.legend()
 
-plt.figure()
-plt.title("Healthy and augmented")
-for mode in modes:
-    encoding = encoding_dict_healthy_and_augmented[mode]
-    plt.scatter(encoding[:,0],encoding[:,1],label=mode)
-plt.legend()
+def generate_encoding_plots(encodings_for_mode):
+    plt.title()
+    fig = go.Figure()
+    for mode in modes:
+        encoding = encoding_dict_healthy_only[mode]
+        fig.add_trace(go.Scatter(x=encoding[:,0], y=encoding[:,0],
+                                 mode='markers',
+                                 name=mode))
 
+        fig.update_layout(
+            title="Model trained on healthy data only",
+            xaxis_title="Principle component 1",
+            yaxis_title="Principle component 2",
+        )
 
-
-
+# plt.figure()
+# plt.title("Healthy and augmented")
+# for mode in modes:
+#     encoding = encoding_dict_healthy_and_augmented[mode]
+#     plt.scatter(encoding[:,0],encoding[:,1],label=mode)
+# plt.legend()
+#
+#
+#
+#

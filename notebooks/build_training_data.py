@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from src.data.phenomenological_ses.make_phenomenological_ses import AugmentedSES
 from definitions import data_dir
 
-o = PyBearingDatasest(n_severities=2, failure_modes=["ball","inner"])
+o = PyBearingDatasest(n_severities=2, failure_modes=["ball","inner","outer"])
 properties_to_modify = {"fault_type":"inner","fault_severity":1}
 results_dictionary = o.make_measurements_for_different_failure_mode(properties_to_modify)
 
@@ -27,7 +27,10 @@ def augmentation_signals(mode,severity,results_dict):
     fs = meta_data["sampling_frequency"]
     expected_fault_frequency = meta_data["derived"]["average_fault_frequency"]
 
-    healthy_ses = results_dict[mode][severity]["envelope_spectrum"]["mag"][0] # Use the first one
+    # Using all of the healthy ses as input means that the augmented dataset will have the noise of the training set
+    # However, among the augmented dataset the "signal" will be identical
+    # notice the "0" meaning that we are using healthy data
+    healthy_ses = results_dict[mode]["0"]["envelope_spectrum"]["mag"]# [0] # Use the first one
 
     ases = AugmentedSES(healthy_ses=healthy_ses,fs=fs,fault_frequency=expected_fault_frequency, peak_magnitude=0.03)
 

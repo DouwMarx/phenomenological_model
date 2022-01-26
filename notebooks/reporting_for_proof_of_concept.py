@@ -20,7 +20,7 @@ def compare_augmented_and_generated_ses(mode,severity,results_dict):
     real_world = meas["envelope_spectrum"]
     augmented = meas["augmented_envelope_spectrum"]
     plt.plot(real_world["freq"],real_world["mag"][0],label ="Real world")
-    plt.plot(augmented["freq"],augmented["mag"],label ="Augmented")
+    plt.plot(augmented["freq"],augmented["mag"][0],label ="Augmented")
 
     plt.legend()
 

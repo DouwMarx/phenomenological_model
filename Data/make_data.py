@@ -105,7 +105,7 @@ class PyBearingDatasest():
 
         # Compute the squared envelope spectrum
         # freq,mag,phase = sq_env_spec(meas,fs=self.simulation_properties["sampling_frequency"])
-        env = envelope(meas)
+        # env = envelope(meas)
 
         # Create a dictionary with different flavours of the same data as well as meta data
 
@@ -115,7 +115,7 @@ class PyBearingDatasest():
                      # "squared_envelope":{"freq":freq,
                      #                     "mag":mag,
                      #                     "phase":phase},
-                     "envelope":env,
+                     # "envelope":env,
                      "meta_data":modified_simulation_properties}
 
         return meas_dict

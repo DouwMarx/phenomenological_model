@@ -3,7 +3,7 @@ import numpy as np
 
 
 class AugmentedSES():
-    def __init__(self,healthy_ses = None,fs=38400, fault_frequency = 74,percentage_of_freqs_to_decay_99_percent = 0.9, peak_magnitude=100):
+    def __init__(self,healthy_ses = None,fs=38400, fault_frequency = 74,percentage_of_freqs_to_decay_99_percent = 0.1, peak_magnitude=1):
         self.fs = fs
         self.freqs = np.arange(0, int(fs / 2))
         self.fault_frequency = fault_frequency
@@ -56,7 +56,7 @@ class AugmentedSES():
         plt.plot(self.freqs, self.get_augmented_ses())
 
 
-aug_obj = AugmentedSES(fault_frequency=60,percentage_of_freqs_to_decay_99_percent=0.1)
-aug_obj.show_augmented_ses()
+# aug_obj = AugmentedSES(fault_frequency=60,percentage_of_freqs_to_decay_99_percent=0.1)
+# aug_obj.show_augmented_ses()
 
 

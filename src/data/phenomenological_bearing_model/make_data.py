@@ -42,10 +42,11 @@ def fft_mag(data, fs):
     freq = np.fft.fftfreq(length, 1 / fs)[0:int(length / 2)]
     return freq, magnitude, phase
 
-def sq_env_spec(signals,fs):
+def env_spec(signals,fs):
 
-    analytic_signal = hilbert(signals,axis=1)
-    amplitude_envelope = np.abs(analytic_signal)
+    # analytic_signal = hilbert(signals,axis=1)
+    # amplitude_envelope = np.abs(analytic_signal)
+    amplitude_envelope = envelope(signals)
     # amplitude_envelope = detrend(amplitude_envelope,type="constant",axis=1)
 
     freq, mag, phase = fft_mag(amplitude_envelope, fs)
@@ -173,31 +174,4 @@ class PyBearingDatasest():
     # properties_to_modify = {"fault_type":"inner","fault_severity":1}
     # rb = ob.make_measurements_for_condition(properties_to_modify)
     # print(np.isnan(rb["envelope"]).sum())
-
-o = PyBearingDatasest(n_severities=2, failure_modes=["ball","inner"])
-properties_to_modify = {"fault_type":"inner","fault_severity":1}
-results_dictionary = o.make_measurements_for_different_failure_mode(properties_to_modify)
-
-plt.figure()
-
-for mode,dictionary in results_dictionary.items():
-    print(mode)
-    for severity, measurements in dictionary.items():
-        t_sig = measurements["time_domain"]
-        env = envelope(t_sig)
-        print(np.isnan(env).sum())
-        freq,mag,phase= sq_env_spec(t_sig,fs=o.simulation_properties["sampling_frequency"])
-        print(np.isnan(mag).sum())
-        results_dictionary[mode][severity]["envelope"] = env
-
-        plt.plot(freq,mag[0], label = mode + " " + severity)
-
-for mode,dictionary in results_dictionary.items():
-    for severity, measurements in dictionary.items():
-        meta_data = measurements["meta_data"]
-        fault_freq = meta_data["derived"]["average_fault_frequency"]
-
-        plt.vlines(fault_freq,0,0.1, label=mode + " ff")
-plt.legend()
-
 

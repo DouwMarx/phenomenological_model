@@ -12,8 +12,8 @@ def remove_dc(arr):
 
 
 # Loading the dataset
-# data = np.load(data_dir.joinpath("generated_and_augmented.npy"),allow_pickle=True)[()]
-data = np.load(data_dir.joinpath("generated_and_augmented_rapid_iter.npy"), allow_pickle=True)[()]
+data = np.load(data_dir.joinpath("generated_and_augmented.npy"),allow_pickle=True)[()]
+# data = np.load(data_dir.joinpath("generated_and_augmented_rapid_iter.npy"), allow_pickle=True)[()]
 
 # Define models
 model_healthy_only = PCA(2)
@@ -44,11 +44,15 @@ for mode_name, mode_data in data.items():
             for model in models:
                 encoding = model.transform(
                     remove_dc(severity_data[data_type]["mag"]))
+
+# Update the dictionary with the encodings
                 model_type_dict.update({model.name: encoding})
             data_type_dict.update({data_type + "_encoding": model_type_dict})
         data[mode_name][severity_name].update(data_type_dict)
 
-        # Update the dictionary with the encodings
+
+
+np.save(data_dir.joinpath("data_with_encodings.npy"), data,allow_pickle=True)
 
 # # Set up test data
 # some_random_mode = "ball"
@@ -83,20 +87,9 @@ for mode_name, mode_data in data.items():
 #     encoding_dict_healthy_and_augmented.update({name: model_healthy_and_augmented.transform(mode_test_set)})
 
 
-# def generate_encoding_plots(data_dict,severity):
-#     plt.title()
-#     fig = go.Figure()
-#     for mode_name,mode_data in data_dict.keys():
-#         encoding = encoding_dict_healthy_only[mode]
-#         fig.add_trace(go.Scatter(x=encoding[:, 0], y=encoding[:, 0],
-#                                  mode='markers',
-#                                  name=mode))
-#
-#         fig.update_layout(
-#             title="Model trained on healthy data only",
-#             xaxis_title="Principle component 1",
-#             yaxis_title="Principle component 2",
-#         )
+
+
+
 
 # plt.figure()
 # plt.title("Healthy and augmented")

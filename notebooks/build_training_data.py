@@ -51,8 +51,8 @@ for mode,dictionary in results_dictionary.items():
         augmented = augmentation_signals(mode,severity,results_dictionary)
         results_dictionary[mode][severity].update(augmented)
 
-# np.save(data_dir.joinpath("generated_and_augmented.npy"),results_dictionary,allow_pickle=True)
-np.save(data_dir.joinpath("generated_and_augmented_rapid_iter.npy"),results_dictionary,allow_pickle=True)
+np.save(data_dir.joinpath("generated_and_augmented.npy"),results_dictionary,allow_pickle=True)
+# np.save(data_dir.joinpath("generated_and_augmented_rapid_iter.npy"),results_dictionary,allow_pickle=True)
 
 
 

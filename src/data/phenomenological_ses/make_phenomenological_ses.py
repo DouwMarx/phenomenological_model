@@ -27,7 +27,9 @@ class AugmentedSES():
     def sharp_peaks_at_fault_frequency(self):
         # return self.pp_sig ** 2
         # return self.pp_sig ** 4
-        return self.pp_sig ** 6
+        # return self.normalize(self.pp_sig ** 6)**6
+        return self.normalize(self.pp_sig ** 8)
+        # return self.normalize((-np.log(0.001+self.pp_sig)**4))
         # return np.log(self.pp_sig+0.1)# ** 6
         # return np.exp(self.pp_sig)
 

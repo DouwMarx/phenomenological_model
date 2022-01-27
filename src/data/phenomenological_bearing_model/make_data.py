@@ -62,15 +62,12 @@ def envelope(array):
 
 
 class PyBearingDatasest():
-    def __init__(self, n_severities,failure_modes):
-        self.simulation_properties = get_simulation_properties()
+    def __init__(self, n_severities,failure_modes,quick_iter = False):
+        self.simulation_properties = get_simulation_properties(quick_iter=quick_iter)
         # self.n_samples_test = n_samples_test
         # self.n_samples_train = n_samples_train
         self.n_severities = n_severities
         self.failure_modes = failure_modes
-
-
-    # fs = simulation_properties["sampling_frequency"]
 
     def make_measurements_for_condition(self, properties_to_modify):
         """

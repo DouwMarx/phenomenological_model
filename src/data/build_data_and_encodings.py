@@ -1,4 +1,4 @@
-from src.data.phenomenological_bearing_model.make_data import PyBearingDatasest
+from src.data.phenomenological_bearing_model.make_data import PyBearingDataset
 import numpy as np
 from src.data.phenomenological_ses.make_phenomenological_ses import AugmentedSES
 from definitions import data_dir
@@ -167,7 +167,7 @@ def compute_encodings(data):
 def run_data_and_encoding_pipeline(data_name,quik_iter = True):
 
     # Create phenomenological model object
-    o = PyBearingDatasest(n_severities=10, failure_modes=["ball", "inner", "outer"], quick_iter=quik_iter) # TODO: Drive these parameters with governing yaml file
+    o = PyBearingDataset(n_severities=10, failure_modes=["ball", "inner", "outer"], quick_iter=quik_iter) # TODO: Drive these parameters with governing yaml file
 
     # Generate phenomenological data
     results_dictionary = o.make_measurements_for_different_failure_mode()

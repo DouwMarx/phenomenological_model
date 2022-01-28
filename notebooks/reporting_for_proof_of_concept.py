@@ -82,7 +82,6 @@ def generate_encoding_plots(data_dict, severity_to_show, show_augmented_encoding
 
     if severity_to_show=="all":
         severities = list(data_dict["ball"].keys()) # Extract all the possible severities
-        print(severities)
     else:
         severities = [severity_to_show]
 
@@ -100,35 +99,28 @@ def generate_encoding_plots(data_dict, severity_to_show, show_augmented_encoding
                                  mode='markers',
                                  name="healthy"))
 
-        # Plot faulty data
-        # colormap = plt.colormaps()[1]
-        map_name = plt.colormaps()[10]
-        # cmap = matplotlib.cm.get_cmap('Spectral')
+        # map_name = plt.colormaps()[4] # Can also loop through color scales if required
+        map_name = "inferno"
         cmap = matplotlib.cm.get_cmap(map_name)
-        # print(severities)
-        for severity in severities:
 
+        # Plot faulty data (Everything except healthy data in first index)
+        for severity in severities[1:] if severity_to_show=="all" else severities:
+            mode_count = -1
+            mode_symbols = ["star","x","square"]
             for mode_name, mode_data in data_dict.items():
+                mode_count+=1
+
                 # Show the encoding of the test data
                 encoding = mode_data[severity]["envelope_spectrum_encoding"][model_name]
                 color_number = float(severity)/len(severities)
-                print(color_number)
-                color =matplotlib.colors.colorConverter.to_rgb(cmap(color_number))# cmap(0.1)#matplotlib.colors.colorConverter.to_rgba(cmap(0.1))
-                # print(color)
+                color = len(encoding)*[matplotlib.colors.to_hex(cmap(color_number))] if severity_to_show=="all" else None# Color to use based on severity
+
                 fig.add_trace(go.Scatter(x=encoding[:, 0], y=encoding[:, 1],
                                          mode='markers',
-                                         # marker={"color":["#00D"]},
-                                         # marker={"color":[color]},
-                                         # color_discrete=matplotlib.colors.colorConverter.to_rgb(cmap(0.1)),#float(severity)/len(severities))),
-                                         # marker={
-                                         #     'color': matplotlib.colors.colorConverter.to_rgb(cmap(0.1)),
-                                         #     # 'size': 5,
-                                         #     # 'opacity': 0.6
-                                         # },
+                                         # marker_size=color_number*10, # Marker size can also scale with severity if required
+                                         marker_color = color,
+                                         marker_symbol = mode_symbols[mode_count],
                                          name=mode_name + " severity: " + severity))
-                # fig.update_traces(marker=dict(
-                #     color='red'))
-
 
                 if show_augmented_encoding:
                     # Possibly include the encodings for the augmented data
@@ -142,6 +134,7 @@ def generate_encoding_plots(data_dict, severity_to_show, show_augmented_encoding
                 # Mention that the encoded data in shown in the representation
                 plot_title = plot_title + " | Augmented encoding shown as crosses"
 
+        # Set the title and axis labels
         fig.update_layout(
             title="Model trained on " + plot_title,
             xaxis_title="Principle component 1",
@@ -166,5 +159,5 @@ many_figures_to_single_html(plots_dir.joinpath("ses.html"), ses_figures)
 pca_figs = generate_encoding_plots(results_dictionary, "8") + generate_encoding_plots(results_dictionary, "8",show_augmented_encoding=True)
 many_figures_to_single_html(plots_dir.joinpath("pca.html"), pca_figs)
 
-pca_figs_all_severity = generate_encoding_plots(results_dictionary, "all",show_augmented_encoding=True)
+pca_figs_all_severity = generate_encoding_plots(results_dictionary, "all", show_augmented_encoding=True)
 many_figures_to_single_html(plots_dir.joinpath("pca_all_sev.html"), pca_figs_all_severity)

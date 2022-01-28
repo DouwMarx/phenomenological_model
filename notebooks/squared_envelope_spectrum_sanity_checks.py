@@ -1,5 +1,5 @@
 import numpy as np
-from bearing_model import Measurement
+from src.data.phenomenological_bearing_model.bearing_model import Measurement
 import matplotlib.pyplot as plt
 from src.utils.reading_and_writing import get_simulation_properties
 from src.utils import sigproc

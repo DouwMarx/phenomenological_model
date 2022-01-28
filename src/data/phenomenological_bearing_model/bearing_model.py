@@ -8,8 +8,6 @@ from src.utils.search import find_nearest_index
 import pickle
 import yaml
 
-# TODO: Todo need to add amplitude modulation for the inner race fault.
-
 # TODO: Potentially making error at the edges when convolving (need to include additional pulses than requested by the user to adress this issue)
 
 # TODO: Let a global class inherit from a measurement object, perhaps call it Dataset

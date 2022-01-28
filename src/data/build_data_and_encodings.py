@@ -1,7 +1,6 @@
 from src.data.phenomenological_bearing_model.make_data import PyBearingDataset
 import numpy as np
 from src.data.phenomenological_ses.make_phenomenological_ses import AugmentedSES
-from definitions import data_dir
 from sklearn.decomposition import PCA
 from definitions import data_dir
 from src.utils.sigproc import env_spec
@@ -9,13 +8,12 @@ from src.utils.sigproc import env_spec
 
 def compute_features_from_time_domain_signal(signal, fs):
     """
-    Computes features from the time domain signal. In this case the envelope spectrum is computed
+    Computes features from the time domain signal. In this case the envelope spectrum is computed, in the future for instance CSCoh
 
     Parameters
     ----------
-    mode
-    severity
-    measurement
+    signal
+    fs
 
     Returns
     -------
@@ -61,7 +59,7 @@ def compute_signal_augmentation(mode, severity, results_dict):
                         peak_magnitude=0.03)  # TODO: Fix peak magnitude, providing augmentation parameters?
     envelope_spectrum = ases.get_augmented_ses()
 
-    return {"augmented_envelope_spectrum": {"freq": ases.freqs,
+    return {"augmented_envelope_spectrum": {"freq": ases.frequencies,
                                             "mag": envelope_spectrum}}
 
 

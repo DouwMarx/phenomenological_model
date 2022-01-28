@@ -1,65 +1,6 @@
 import numpy as np
 from bearing_model import Measurement
-import matplotlib.pyplot as plt
 from src.utils.reading_and_writing import get_simulation_properties
-from scipy.signal import hilbert
-# from scipy.fftpack import fft,ifft
-# def custom_hilbert(x, N=None, axis=-1):
-#     Xf = fft(x, N, axis=axis)
-#     h = np.zeros(N)
-#     if N % 2 == 0:
-#         h[0] = h[N // 2] = 1
-#         h[1:N // 2] = 2
-#     else:
-#         h[0] = 1
-#         h[1:(N + 1) // 2] = 2
-#
-#     if x.ndim > 1:
-#         ind = [np.newaxis] * x.ndim
-#         ind[axis] = slice(None)
-#         h = h[tuple(ind)]
-#     x = ifft(Xf * h, axis=axis)
-#     return x
-
-
-def fft_mag(data, fs):
-    """
-    Parameters
-    ----------
-    data: String
-        The heading name for the dataframe
-    Returns
-    -------
-    freq: Frequency range
-    magnitude:
-    phase:
-    """
-
-    length = data.shape[1]
-    Y = np.fft.fft(data,axis=1) / length
-    magnitude = np.abs(Y)[:,0:int(length / 2)]
-    phase = np.angle(Y)[:,0:int(length / 2)]
-    freq = np.fft.fftfreq(length, 1 / fs)[0:int(length / 2)]
-    return freq, magnitude, phase
-
-def env_spec(signals,fs):
-
-    # analytic_signal = hilbert(signals,axis=1)
-    # amplitude_envelope = np.abs(analytic_signal)
-    amplitude_envelope = envelope(signals)
-    # amplitude_envelope = detrend(amplitude_envelope,type="constant",axis=1)
-
-    freq, mag, phase = fft_mag(amplitude_envelope, fs)
-    return freq,mag,phase
-
-def envelope(array):
-    # print(np.isnan(array).sum())
-    ana = hilbert(array,axis=1)
-    # print(np.isnan(ana).sum())
-    amplitude_envelope =np.abs(ana)
-    # print(np.isnan(amplitude_envelope).sum())
-    return amplitude_envelope
-
 
 class PyBearingDatasest():
     def __init__(self, n_severities,failure_modes,quick_iter = False):
@@ -148,7 +89,7 @@ class PyBearingDatasest():
         if properties_to_modify is None:
             properties_to_modify = {}
         failure_mode_dict = {}
-        
+
         # Instantiate the dictionary of datasets that will follow the structure as in data_set_format_for_project.md
 
         # Include the healthy data (train and test set)
@@ -162,17 +103,3 @@ class PyBearingDatasest():
             properties_to_modify["fault_type"] = failure_mode
             failure_mode_dict[failure_mode] = self.make_measurements_for_different_severity(properties_to_modify)
         return failure_mode_dict
-
-
-
-# TODO: The generation of the envelope spectrum using the hilbert transform delivers differernt results for consequent runs and I cannot understand it
-    # o = PyBearingDatasest(n_samples_test=4, n_samples_train=4, n_severities=3, failure_modes=["ball","inner"])
-    # properties_to_modify = {"fault_type":"inner","fault_severity":1}
-    # r = o.make_measurements_for_condition(properties_to_modify)
-    # print(np.isnan(r["envelope"]).sum())
-    #
-    # ob = PyBearingDatasest(n_samples_test=4, n_samples_train=4,n_severities=3,failure_modes=["ball","inner"])
-    # properties_to_modify = {"fault_type":"inner","fault_severity":1}
-    # rb = ob.make_measurements_for_condition(properties_to_modify)
-    # print(np.isnan(rb["envelope"]).sum())
-

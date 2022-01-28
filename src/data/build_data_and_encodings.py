@@ -1,9 +1,10 @@
-from src.data.phenomenological_bearing_model.make_data import PyBearingDatasest, envelope, env_spec
+from src.data.phenomenological_bearing_model.make_data import PyBearingDatasest
 import numpy as np
 from src.data.phenomenological_ses.make_phenomenological_ses import AugmentedSES
 from definitions import data_dir
 from sklearn.decomposition import PCA
 from definitions import data_dir
+from src.utils.sigproc import env_spec
 
 
 def compute_features_from_time_domain_signal(signal, fs):

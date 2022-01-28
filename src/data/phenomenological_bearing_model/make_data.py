@@ -142,10 +142,14 @@ class PyBearingDatasest():
     #
     #     return test_train_dict
 
-    def make_measurements_for_different_failure_mode(self,properties_to_modify):
+    def make_measurements_for_different_failure_mode(self, properties_to_modify=None):
         """ For different failure modes, compute many samples for each severity"""
 
-        failure_mode_dict = {}  # Instantiate the dictionary of datasets that will follow the structure as in data_set_format_for_project.md
+        if properties_to_modify is None:
+            properties_to_modify = {}
+        failure_mode_dict = {}
+        
+        # Instantiate the dictionary of datasets that will follow the structure as in data_set_format_for_project.md
 
         # Include the healthy data (train and test set)
 

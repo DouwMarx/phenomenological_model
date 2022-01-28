@@ -1,3 +1,5 @@
+# Comments with # not by original author
+
 function [sdofRespTime] = sdofResponse(fs,k,zita,fn,Lsdof)
 %% Acceleration of a SDOF system
 % [sdofRespTime] = sdofResponse(fs,k,zita,fn,Lsdof)
@@ -27,4 +29,4 @@ xd = [0 diff(xt)*fs]; % velocity
 sdofRespTime = [0 diff(xd)*fs]; % acceleration
 
 # I am not 100% convinded that the numerical differentiation of the time reponse is a good idea. Exponential decay makes integration behave stragely.
-# Will rather try analytical
+# Using analytical signals?

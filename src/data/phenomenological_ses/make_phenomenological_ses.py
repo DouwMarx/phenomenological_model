@@ -7,7 +7,7 @@ class AugmentedSES():
     Augment an existing envelope spectrum towards the expected envelope spectrum for a given failure mode.
     """
 
-    def __init__(self, healthy_ses=None, fs=38400, fault_frequency=74, percentage_of_freqs_to_decay_99_percent=0.5,
+    def __init__(self, healthy_ses=None, fs=38400, fault_frequency=74, percentage_of_freqs_to_decay_99_percent=0.9,
                  peak_magnitude=0.1):
         self.fs = fs
 

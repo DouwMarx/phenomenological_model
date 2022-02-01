@@ -133,7 +133,7 @@ def compute_encodings(data):
     healthy_train = limit_frequency_components(np.vstack(
         all_healthy))  # Healthy data from different "modes" even though modes don't technically exist when healthy
 
-    # Healthy dan augmented data
+    # Healthy and augmented data
     all_augmented_modes = [data[mode]["1"]["augmented_envelope_spectrum"]["mag"] for mode in list(data.keys())]
     augmented_and_healthy_train = limit_frequency_components(np.vstack(all_healthy + all_augmented_modes))
 
@@ -182,4 +182,4 @@ def run_data_and_encoding_pipeline(data_name,quik_iter = True):
 
 
 if __name__ == "__main__":
-    run_data_and_encoding_pipeline("generated_and_augmented")
+    run_data_and_encoding_pipeline("generated_and_augmented",quik_iter=False)

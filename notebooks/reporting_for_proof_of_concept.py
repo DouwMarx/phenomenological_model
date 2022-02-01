@@ -148,7 +148,7 @@ def generate_encoding_plots(data_dict, severity_to_show, show_augmented_encoding
 
 # Loading the dataset
 # results_dictionary = np.load(data_dir.joinpath("generated_and_augmented.npy"), allow_pickle=True)[()]
-results_dictionary = np.load(data_dir.joinpath("data_with_encodings.npy"), allow_pickle=True)[()]
+results_dictionary = np.load(data_dir.joinpath("generated_and_augmented.npy"), allow_pickle=True)[()]
 
 time_series_figures = loop_through_mode_and_severity(results_dictionary, show_example_time_signal)
 many_figures_to_single_html(plots_dir.joinpath("time_series.html"), time_series_figures)

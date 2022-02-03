@@ -1,6 +1,6 @@
 import numpy as np
-from src.data.phenomenological_bearing_model.bearing_model import Measurement
-from src.utils.reading_and_writing import get_simulation_properties
+from pypm.phenomenological_bearing_model.bearing_model import Measurement
+from pypm.utils.reading_and_writing import get_simulation_properties
 
 
 class PyBearingDataset(object):
@@ -38,9 +38,9 @@ class PyBearingDataset(object):
         measurement_obj = Measurement(**modified_simulation_properties)
         meas = measurement_obj.get_measurements()  # Get the time_domain measurements
 
-        # Create a dictionary with different flavours of the same data as well as meta data
+        # Create a dictionary with different flavours of the same pypm as well as meta pypm
 
-        # Add derived meta-data to the meta data for later use
+        # Add derived meta-pypm to the meta pypm for later use
         modified_simulation_properties.update(
             measurement_obj.meta_data)
 
@@ -70,11 +70,11 @@ class PyBearingDataset(object):
             modified_properties["fault_severity"] = severity  # Update the severity of the default parameters
 
             data = self.make_measurements_for_condition(modified_properties)
-            severity_dict[str(degree)] = data # Add the generated data to a dictionary of the form {"0":data,"1":data... etc)
+            severity_dict[str(degree)] = data # Add the generated pypm to a dictionary of the form {"0":pypm,"1":pypm... etc)
 
         return severity_dict
 
-    # TODO: Consider adding a dedicated function for generating data under healthy conditions (ie not severity = 0)
+    # TODO: Consider adding a dedicated function for generating pypm under healthy conditions (ie not severity = 0)
 
     def make_measurements_for_different_failure_mode(self, properties_to_modify=None):
         """ For different failure modes, compute many samples for each severity"""
@@ -86,7 +86,7 @@ class PyBearingDataset(object):
         # (see anomaly detection project)
         failure_mode_dict = {}
 
-        # Include the data for each of the failure modes
+        # Include the pypm for each of the failure modes
         for failure_mode in self.failure_modes:
             properties_to_modify["fault_type"] = failure_mode
             failure_mode_dict[failure_mode] = self.make_measurements_for_different_severity(properties_to_modify)

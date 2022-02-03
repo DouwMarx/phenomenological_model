@@ -18,7 +18,7 @@ def loop_through_mode_and_severity(results_dictionary, function_to_apply):
 
 
 def compare_augmented_and_generated_ses(mode, severity, results_dict):
-    # Compare the augmented data with the generated data from the phenomenological model.
+    # Compare the augmented pypm with the generated pypm from the phenomenological model.
     meas = results_dict[mode][severity]
     real_world = meas["envelope_spectrum"]
     augmented = meas["augmented_envelope_spectrum"]
@@ -27,17 +27,17 @@ def compare_augmented_and_generated_ses(mode, severity, results_dict):
     real_world_freq = real_world["freq"]
 
     fig = go.Figure()
-    # The real data
+    # The real pypm
     fig.add_trace(go.Scatter(x=real_world_freq, y=real_world_mag,
                              mode='lines',
                              name='Measured'))
 
     augmented_mag = augmented["mag"][0]
     augmented_freq = augmented["freq"]
-    # The augmented data
+    # The augmented pypm
     fig.add_trace(go.Scatter(x=augmented_freq, y=augmented_mag,
                              mode='lines',
-                             name='Augmented healthy data'))
+                             name='Augmented healthy pypm'))
 
     fig.update_layout(
         title="Failure mode:" + mode + " | Severity: " + severity,
@@ -85,15 +85,15 @@ def generate_encoding_plots(data_dict, severity_to_show, show_augmented_encoding
     else:
         severities = [severity_to_show]
 
-    # Create two different plots, one for the model trained on healthy data only and one trained on both the healthy data and the augmented data.
+    # Create two different plots, one for the model trained on healthy pypm only and one trained on both the healthy pypm and the augmented pypm.
     for model_name, plot_title in zip(
             ["healthy_only", "healthy_and_augmented"],
-            ["healthy data only", "both healthy data and augmented data"]):
+            ["healthy pypm only", "both healthy pypm and augmented pypm"]):
 
         #Define the figure object
         fig = go.Figure()
 
-        # Plot healthy data, choice of "failure mode" for healthy is arbitrary
+        # Plot healthy pypm, choice of "failure mode" for healthy is arbitrary
         healthy_encoding = data_dict["ball"]["0"]["envelope_spectrum_encoding"][model_name]
         fig.add_trace(go.Scatter(x=healthy_encoding[:, 0], y=healthy_encoding[:, 1],
                                  mode='markers',
@@ -103,14 +103,14 @@ def generate_encoding_plots(data_dict, severity_to_show, show_augmented_encoding
         map_name = "inferno"
         cmap = matplotlib.cm.get_cmap(map_name)
 
-        # Plot faulty data (Everything except healthy data in first index)
+        # Plot faulty pypm (Everything except healthy pypm in first index)
         for severity in severities[1:] if severity_to_show=="all" else severities:
             mode_count = -1
             mode_symbols = ["star","x","square"]
             for mode_name, mode_data in data_dict.items():
                 mode_count+=1
 
-                # Show the encoding of the test data
+                # Show the encoding of the test pypm
                 encoding = mode_data[severity]["envelope_spectrum_encoding"][model_name]
                 color_number = float(severity)/len(severities)
                 color = len(encoding)*[matplotlib.colors.to_hex(cmap(color_number))] if severity_to_show=="all" else None# Color to use based on severity
@@ -123,7 +123,7 @@ def generate_encoding_plots(data_dict, severity_to_show, show_augmented_encoding
                                          name=mode_name + " severity: " + severity))
 
                 if show_augmented_encoding:
-                    # Possibly include the encodings for the augmented data
+                    # Possibly include the encodings for the augmented pypm
                     augmented_encoding = mode_data[severity]["augmented_envelope_spectrum_encoding"][model_name]
                     fig.add_trace(go.Scatter(x=augmented_encoding[:, 0], y=augmented_encoding[:, 1],
                                              mode='markers',
@@ -131,7 +131,7 @@ def generate_encoding_plots(data_dict, severity_to_show, show_augmented_encoding
                                              name=mode_name + "augmented encoding, severity:" + severity))
 
             if show_augmented_encoding:
-                # Mention that the encoded data in shown in the representation
+                # Mention that the encoded pypm in shown in the representation
                 plot_title = plot_title + " | Augmented encoding shown as crosses"
 
         # Set the title and axis labels

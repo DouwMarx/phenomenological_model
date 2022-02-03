@@ -20,9 +20,9 @@ healthy_encoding_mean = np.mean(all_healthy_encoding, axis=0)
 for mode, dictionary in results_dictionary.items():
     # Making use of a fixed severity for the augmentation for now
     augmented_encoding = results_dictionary[mode]["7"]["augmented_envelope_spectrum_encoding"]["healthy_and_augmented"]
-    # healthy_encoding = results_dictionary["ball"]["0"]["envelope_spectrum_encoding"]["healthy_and_augmented"] #TODO: Use all healthy data
+    # healthy_encoding = results_dictionary["ball"]["0"]["envelope_spectrum_encoding"]["healthy_and_augmented"] #TODO: Use all healthy pypm
 
-    # Currently arbitrarily chosen healthy data
+    # Currently arbitrarily chosen healthy pypm
     augmented_encoding_mean = np.mean(augmented_encoding, axis=0)
     # healthy_encoding_mean = np.mean(healthy_encoding, axis=0)
 
@@ -50,8 +50,8 @@ for mode, dictionary in results_dictionary.items():
         for failure_mode, expected_failure_mode_direction in expected_encoding_failure_directions.items():
             measured_projection = np.dot(measured_encoding,expected_failure_mode_direction)
 
-            healthy_encoding = results_dictionary["ball"]["0"]["envelope_spectrum_encoding"]["healthy_and_augmented"]  # TODO: Use all healthy data
-            # Currently arbitrarily chosen healthy data
+            healthy_encoding = results_dictionary["ball"]["0"]["envelope_spectrum_encoding"]["healthy_and_augmented"]  # TODO: Use all healthy pypm
+            # Currently arbitrarily chosen healthy pypm
             healthy_projection = np.dot(healthy_encoding, expected_failure_mode_direction)
 
             results_dictionary[mode][severity]["measured_projection_in_fault_direction"].update({failure_mode: measured_projection})

@@ -4,7 +4,7 @@ import scipy.integrate as integrate
 import scipy
 from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
-from src.utils.search import find_nearest_index
+from pypm.utils.search import find_nearest_index
 import pickle
 import yaml
 
@@ -230,13 +230,13 @@ class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that ma
                                                       average_angular_distance_between_impulses):
         # Generate 5% than maximum more to account for  possibility of ending up with a shorter signal
         n_impulse_periods_to_generate = int(np.ceil(np.max(expected_number_of_impulses_during_measurement) * 1.05))
-        # if std(expected_number_of_impulses) >threash : probably inefficient ie. generating too much data that will be discarded
+        # if std(expected_number_of_impulses) >threash : probably inefficient ie. generating too much pypm that will be discarded
 
         # Create array of the mean and variance for angular distance between impulses
         ones = np.ones((self.n_measurements, n_impulse_periods_to_generate))
         mean = ones * average_angular_distance_between_impulses
 
-        # Generate random data of the distances traveled
+        # Generate random pypm of the distances traveled
         variance = mean * self.variance_factor_angular_distance_between_impulses
         distance_traveled_between_impulses = np.random.normal(mean, scale=np.sqrt(variance))
 
@@ -321,7 +321,7 @@ class Modulate():
 
 class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
     """
-    Class used to define the properties of the dataset that will be simulated. Used to manage the overall data generation
+    Class used to define the properties of the dataset that will be simulated. Used to manage the overall pypm generation
     """
 
     # TODO: let paramets be pulled from flattened dict from yaml
@@ -370,7 +370,7 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
         self.measured_time = self.time[::2]  # The measured time is sampled at half the simulation time (continuous time).
 
 
-        # Set some derived parameters as meta data
+        # Set some derived parameters as meta pypm
         self.meta_data = {"derived": {
             "geometry_factor": self.get_geometry_parameter(self.fault_type),
             "average_fault_frequency": np.average(self.get_rotation_frequency_as_function_of_time())*self.get_geometry_parameter(self.fault_type)/(2*np.pi)

@@ -48,3 +48,9 @@ ldf = sympy.lambdify([t, zeta, omega_n], xdotdot_implement)
 r = [ldf(t, 0.01, 1000) for t in np.linspace(0, 1, 1000)]
 plt.figure()
 plt.plot(r)
+
+def main():
+    return ldf
+
+if __name__== "__main__":
+    main()

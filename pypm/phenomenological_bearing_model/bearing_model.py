@@ -461,10 +461,3 @@ class Measurement(Bearing,Impulse, SdofSys,SpeedProfile,Modulate):#, Impulse):
         measured = self.add_measurement_noise(measured)
 
         return measured
-
-
-                                                                                  # Low pass filter to prevent ani-aliasing
-
-    # def generate_data_and_export(self):
-    #     p
-    #

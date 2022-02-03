@@ -91,3 +91,13 @@ class PyBearingDataset(object):
             properties_to_modify["fault_type"] = failure_mode
             failure_mode_dict[failure_mode] = self.make_measurements_for_different_severity(properties_to_modify)
         return failure_mode_dict
+
+
+def main():
+    o = PyBearingDataset(n_severities=3, failure_modes=["ball", "inner", "outer"], quick_iter=True) # TODO: Drive these parameters with governing yaml file
+    return o.make_measurements_for_different_failure_mode()
+
+
+
+if __name__ == "__main__":
+    main()

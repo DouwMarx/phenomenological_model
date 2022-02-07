@@ -1,6 +1,7 @@
 # Phenomenological model
 
 Python implementation of phenomenological bearing model. 
+See docs/procedure.md for an high level explanation of what the code is doing.
 
 ## Usage
 - Edit the *simulation_properties.yml* file to change the simulation properties. 

@@ -124,8 +124,8 @@ class SpeedProfile():
         return np.ones((self.n_measurements, self.n_master_samples)) * constant_speed
 
     def sine(self):
-        f = 5
-        mean_speed = 100 * 2 * np.pi / 60  # 100 RPM in rad/s | revs/min * rads/rev * 2pi rads/rev * min/60s
+        f = 6
+        mean_speed = 500 * 2 * np.pi / 60  # 100 RPM in rad/s | revs/min * rads/rev * 2pi rads/rev * min/60s
         profile = mean_speed + np.sin(self.time * 2 * np.pi * f) * mean_speed * 0.9
         return np.outer(np.ones(self.n_measurements), profile)
 
@@ -331,6 +331,7 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
                  t_duration,
                  sampling_frequency,
                  measurement_noise_standard_deviation,
+                 transient_amplitude_standard_deviation,
                  **kwargs):
         """
 
@@ -343,12 +344,13 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
 
         # self.check_input_parameters(**kwargs) # TODO: need to run a check that gives the user information if the wrong arguments are provided
 
+        # Noise
         self.measurement_noise_standard_deviation = measurement_noise_standard_deviation
+        self.transient_amplitude_standard_deviation = transient_amplitude_standard_deviation
 
         # Sampling properties
         self.sampling_frequency = sampling_frequency
-        self.master_sample_frequency = int(
-            self.sampling_frequency * 2)  # represents continuous time, the sampling frequency at which computations are performed.
+        self.master_sample_frequency = int(self.sampling_frequency * 2)  # represents continuous time, the sampling frequency at which computations are performed.
 
         # Initialize the base classes
         super(Measurement, self).__init__(**kwargs)
@@ -373,7 +375,7 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
         self.measured_time = self.time[
                              ::2]  # The measured time is sampled at half the simulation time (continuous time).
 
-        # Set some derived parameters as meta pypm
+        # Set some derived parameters as meta data
         self.meta_data = {"derived": {
             "geometry_factor": self.get_geometry_parameter(self.fault_type),
             "average_fault_frequency": np.average(
@@ -446,24 +448,21 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
             indexes = modulation_signal
 
         # If there is a stochastic component to the amplitude of the transients in the phenomenological model
-        print(np.max(indexes))
 
-        indexes = indexes * (1 - np.random.normal(np.zeros(indexes.shape), scale=0.1))  # All indexes that are zero will remain zero,
-                                                                        # those that are 1 are modified in magnitude
-                                                                        # Standard deviation of 0.1 means that almost all of the data (2 standard deviations)
-                                                                        # Will have an amplitude less than 20% different than otherwise
-        print(np.max(indexes))
+        # All indexes that are zero will remain zero,
+        # those that are 1 are modified in magnitude
+        # Standard deviation of 0.1 means that almost all of the data (2 standard deviations)
+        # Will have an amplitude less than 20% different than otherwise
+        indexes = indexes * (1 - np.random.normal(np.zeros(indexes.shape), scale=self.transient_amplitude_standard_deviation))
 
         # Get the transient response for the SDOF system
         transient = self.get_transient_response()
 
         # Convolve the transient with the impulses
-
         convolved = scipy.signal.convolve2d(indexes, transient.reshape(1, -1), mode="same")
         # # convolved2 = scipy.signal.convolve(indexes_at_which_impulses_occur, transient.reshape(1,-1), mode="same")
-        # return convolved
 
-        # measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="fir") # Subsample from the master sample rate to the actual sample rate
+        # Go from "continuous" time to measured time
         # measured = scipy.signal.decimate(convolved, 2, axis=1, ftype="iir") # Subsample from the master sample rate to the actual sample rate
         measured = convolved[:, ::2]  # Subsampling (get every second sample)
 

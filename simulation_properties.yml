@@ -7,6 +7,7 @@ fault_information:
 stochastic_properties:
   slip_variance_factor: 0 # Variance for the generation of the random contribution (How regular is the excitations from the bearing fault)
   measurement_noise_standard_deviation : 0.2 # Standard deviation of the additive Gaussian measurement noise.
+  transient_amplitude_standard_deviation : 0.1 # Standard deviation of fraction to modify the transient amplitude with
 
 bearing_geometry:
   d : 8.4  # bearing roller diameter [mm]

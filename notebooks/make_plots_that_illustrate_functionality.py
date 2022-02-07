@@ -36,12 +36,17 @@ def many_figures_to_single_html(pathlib_path, list_of_figure_objects):
 # spec_dict = spec_dict.update({"measurement_noise_standard_deviation": 0})
 
 
-spec_dict.update({"measurement_noise_standard_deviation": 0})
+spec_dict.update({
+    "measurement_noise_standard_deviation": 0,
+    "transient_amplitude_standard_deviation": 0,
+})
 
 to_show_dict = {
     "Initial conditions for transients": {},
     "Slip variance": {"slip_variance_factor": 0.1},
-    "Inner fault Modulation": {"fault_type": "inner"}
+    "Varying speed": {"speed_profile_type": "sine"},
+    "Variation in transient amplitude":{"transient_amplitude_standard_deviation": 0.2},
+    "Inner fault Modulation": {"fault_type": "inner"},
 }
 
 plots = []

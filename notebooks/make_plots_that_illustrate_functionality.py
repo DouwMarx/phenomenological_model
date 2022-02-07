@@ -47,6 +47,7 @@ to_show_dict = {
     "Varying speed": {"speed_profile_type": "sine"},
     "Variation in transient amplitude":{"transient_amplitude_standard_deviation": 0.2},
     "Inner fault Modulation": {"fault_type": "inner"},
+    "Measurement with noise": {"measurement_noise_standard_deviation": 0.5},
 }
 
 plots = []

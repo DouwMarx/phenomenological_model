@@ -17,7 +17,7 @@ bearing_geometry:
 
 measurement_properties:
   sampling_frequency :  38400 # sample frequency [Hz]
-  t_duration: 0.1 #2 #20 # time duration of measurement [s]
+  t_duration: 0.5 #2 #20 # time duration of measurement [s]
   n_measurements: 2 # number of measurements to take in "parallel"
 
 transient_response_properties:

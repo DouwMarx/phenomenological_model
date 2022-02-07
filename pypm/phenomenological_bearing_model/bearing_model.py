@@ -13,7 +13,7 @@ from pypm.utils.search import find_nearest_index
 
 class Bearing():
     """
-    Class for defining fault characteristics of bearings based on bearing parameters.
+    Define fault characteristics of bearings based on bearing parameters.
     """
 
     def __init__(self, d, D, contact_angle, n_ball, **kwargs):
@@ -28,22 +28,17 @@ class Bearing():
         """
         super().__init__(**kwargs)
 
-        # Assign bearing parameters as class attributes
+        # Bearing parameters as class attributes
         self.d = d
         self.D = D
         self.contact_angle = contact_angle
         self.n_ball = n_ball
 
-        # Compute derived paramters
+        # Compute derived parameters
         self.geometry_parameters = {"inner": self.get_inner_race_parameter,
                                     "outer": self.get_outer_race_parameter,
                                     "ball": self.get_ball_parameter}
-        # print("bearing init ran")
 
-    # TODO: This definition is strange
-    # Ideally it would be factor = f_impulse/f_rotation
-
-    # TODO:Double check the fault frequencies. There was mistake?
     def get_inner_race_parameter(self):
         """
         Fault characteristic for inner race fault
@@ -90,10 +85,10 @@ class Bearing():
 
 
 class SpeedProfile():
-    # TODO: This makes the assumption that the frequency at which the speed profile is defined is the same as the sampling frequency which is not strictly required
-    # TODO: change the starting angle at which the fist fault occurs
+    # TODO: This makes the assumption that the frequency at which the speed profile is defined is the same as the master sampling frequency which is not strictly required
+    # TODO: change the starting angle at which the first fault occurs
     def __init__(self, speed_profile_type, **kwargs):
-        # Values for these attributes are set in the measurement class
+        # Values for these attributes are set in the measurement class. Initialised here as None
         self.time = None
         self.n_master_samples = None
         self.n_measurements = None
@@ -104,37 +99,49 @@ class SpeedProfile():
 
     def set_angles(self):
         """
-        Compute the angles at a given master sample.
+        Compute the angles at a given master sample rate.
         Do this for each of the measurements.
+
         Returns
         -------
 
         """
+
         self.angles = self.get_angle_as_function_of_time()
         self.total_angle_traversed = self.get_total_angle_traversed()
 
     def get_rotation_frequency_as_function_of_time(self):
-        """Define the rotation rate as a function samples"""
+        """
+        Define the rotation rate as a function samples
+        """
+
         profiles = {"constant": self.constant,
                     "sine": self.sine}
         return profiles[self.speed_profile_type]()  # Compute the appropriate speed profile
 
+    # Further profiles can be defined here
     def constant(self):
         constant_speed = 500 * 2 * np.pi / 60  # 500 RPM in rad/s
         return np.ones((self.n_measurements, self.n_master_samples)) * constant_speed
 
     def sine(self):
-        f = 6
+        f = 2
         mean_speed = 500 * 2 * np.pi / 60  # 100 RPM in rad/s | revs/min * rads/rev * 2pi rads/rev * min/60s
-        profile = mean_speed + np.sin(self.time * 2 * np.pi * f) * mean_speed * 0.9
-        return np.outer(np.ones(self.n_measurements), profile)
+        profile = mean_speed + np.sin(self.time * 2 * np.pi * f) * mean_speed * 0.5
+        return np.outer(np.ones(self.n_measurements), profile) # Currently asigning same speed profile for each measurement
 
     def get_angle_as_function_of_time(self):
         """Integrate the speed profile to get the angle traversed as a function of time"""
-        # integrate_a = np.cumsum(sp[:,0:-1] + 0.5*np.diff(sp,axis=1),axis=1)/m.master_sample_frequency can remake integration in numpy only if required
         speed_profile = self.get_rotation_frequency_as_function_of_time()
+
+
         angle = integrate.cumtrapz(y=speed_profile, x=self.time, axis=1, initial=0)  # Assume angle starts at 0
-        return angle
+
+        # Angular position where the measurement is started
+        # initial_angle_for_each_measurement = np.random.uniform(0, 2*np.pi, size = (self.n_measurements,1))
+        # TODO: Add a ranomized initial start
+
+        return angle # + initial_angle_for_each_measurement # Initial angle is added to all indexes for each row separately
 
     def get_total_angle_traversed(self):
         return self.angles[:,
@@ -241,8 +248,12 @@ class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that ma
 
         # Add the distances between impulses together to find the distances from the start where impulses occur.
         cumulative_impulse_distance = np.cumsum(distance_traveled_between_impulses, axis=1)
+
+        random_starting_impulse_angle = np.random.uniform(0, average_angular_distance_between_impulses, (self.n_measurements, 1))
+        # np.zeros((self.n_measurements, 1))
         angular_distances_at_which_impulses_occur = np.hstack(
-            [np.zeros((self.n_measurements, 1)), cumulative_impulse_distance])  # An impulse occurs immediately
+                                                    [random_starting_impulse_angle,
+                                                    cumulative_impulse_distance + random_starting_impulse_angle])  # An impulse occurs immediately
         # TODO: Add random variation in when the fist impulse occurs
         return angular_distances_at_which_impulses_occur
 

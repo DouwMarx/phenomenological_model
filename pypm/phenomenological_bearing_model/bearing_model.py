@@ -440,10 +440,19 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
 
         indexes = self.indexes_which_impulse_occur_for_all_measurement(angular_distances_at_which_impulses_occur)
 
-        if self.fault_type == "inner":  # If the fault time ivolves modulation, do modulation
-
+        # If the fault type involves modulation, do modulation
+        if self.fault_type == "inner":
             modulation_signal = self.modulate_impulses_per_sample(indexes, self.angles)
             indexes = modulation_signal
+
+        # If there is a stochastic component to the amplitude of the transients in the phenomenological model
+        print(np.max(indexes))
+
+        indexes = indexes * (1 - np.random.normal(np.zeros(indexes.shape), scale=0.1))  # All indexes that are zero will remain zero,
+                                                                        # those that are 1 are modified in magnitude
+                                                                        # Standard deviation of 0.1 means that almost all of the data (2 standard deviations)
+                                                                        # Will have an amplitude less than 20% different than otherwise
+        print(np.max(indexes))
 
         # Get the transient response for the SDOF system
         transient = self.get_transient_response()

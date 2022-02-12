@@ -137,9 +137,6 @@ class SpeedProfile():
 
         angle = integrate.cumtrapz(y=speed_profile, x=self.time, axis=1, initial=0)  # Assume angle starts at 0
 
-        # Angular position where the measurement is started
-        # initial_angle_for_each_measurement = np.random.uniform(0, 2*np.pi, size = (self.n_measurements,1))
-        # TODO: Add a ranomized initial start
 
         return angle # + initial_angle_for_each_measurement # Initial angle is added to all indexes for each row separately
 
@@ -249,7 +246,12 @@ class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that ma
         # Add the distances between impulses together to find the distances from the start where impulses occur.
         cumulative_impulse_distance = np.cumsum(distance_traveled_between_impulses, axis=1)
 
-        random_starting_impulse_angle = np.random.uniform(0, average_angular_distance_between_impulses, (self.n_measurements, 1))
+        use_random_starting_impulse = False
+        if use_random_starting_impulse:
+            random_starting_impulse_angle = np.random.uniform(0, average_angular_distance_between_impulses, (self.n_measurements, 1))
+
+        random_starting_impulse_angle = np.zeros((self.n_measurements, 1))
+
         # np.zeros((self.n_measurements, 1))
         angular_distances_at_which_impulses_occur = np.hstack(
                                                     [random_starting_impulse_angle,

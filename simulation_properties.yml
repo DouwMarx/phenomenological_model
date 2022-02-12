@@ -6,8 +6,8 @@ fault_information:
 
 stochastic_properties:
   slip_variance_factor: 0 # Variance for the generation of the random contribution (How regular is the excitations from the bearing fault)
-  measurement_noise_standard_deviation : 0.2 # Standard deviation of the additive Gaussian measurement noise.
-  transient_amplitude_standard_deviation : 0.1 # Standard deviation of fraction to modify the transient amplitude with
+  measurement_noise_standard_deviation : 0.3 # Standard deviation of the additive Gaussian measurement noise.
+  transient_amplitude_standard_deviation : 0.0 # Standard deviation of fraction to modify the transient amplitude with
 
 bearing_geometry:
   d : 8.4  # bearing roller diameter [mm]
@@ -17,8 +17,8 @@ bearing_geometry:
 
 measurement_properties:
   sampling_frequency :  38400 # sample frequency [Hz]
-  t_duration: 0.5 #2 #20 # time duration of measurement [s]
-  n_measurements: 2 # number of measurements to take in "parallel"
+  t_duration: 1 # 0.5 #2 #20 # time duration of measurement [s]
+  n_measurements: 50 # number of measurements to take in "parallel"
 
 transient_response_properties:
   k : 2.0e+13 # SDOF spring stiffness [N/m]

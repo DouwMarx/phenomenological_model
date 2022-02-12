@@ -84,11 +84,27 @@ class PyBearingDataset(object):
         # (see anomaly detection project)
         failure_mode_dict = {}
 
-        # Include the pypm for each of the failure modes
-        for failure_mode in self.failure_modes:
+        from joblib import Parallel, delayed
+        def process(failure_mode):
             properties_to_modify["fault_type"] = failure_mode
-            failure_mode_dict[failure_mode] = self.make_measurements_for_different_severity(properties_to_modify)
+            return {failure_mode:self.make_measurements_for_different_severity(properties_to_modify)}
+
+
+        results = Parallel(n_jobs=2)(delayed(process)(failure_mode) for failure_mode in self.failure_modes)
+
+        failure_mode_dict = {key:val for x in results for key,val in x.items()}
+        # # print(results)  # prints [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+        # for result in results:
+        #     failure_mode_dict.update(result)
+
+        # # Include the pypm for each of the failure modes
+        # for failure_mode in self.failure_modes:
+        #     properties_to_modify["fault_type"] = failure_mode
+        #     failure_mode_dict[failure_mode] = self.make_measurements_for_different_severity(properties_to_modify)
+
         return failure_mode_dict
+
+
 
 
 def main():

@@ -33,9 +33,6 @@ def many_figures_to_single_html(pathlib_path, list_of_figure_objects):
 
 # Update the standard properties
 
-# spec_dict = spec_dict.update({"measurement_noise_standard_deviation": 0})
-
-
 spec_dict.update({
     "measurement_noise_standard_deviation": 0,
     "transient_amplitude_standard_deviation": 0,
@@ -66,3 +63,6 @@ for title, to_update in to_show_dict.items():
     plots.append(o)
 
 many_figures_to_single_html(plots_dir.joinpath("demonstrate_functionality.html"), plots)
+
+def main():
+    return plots

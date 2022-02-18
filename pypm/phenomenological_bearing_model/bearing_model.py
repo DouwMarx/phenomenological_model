@@ -5,13 +5,12 @@ from scipy.interpolate import interp1d
 from scipy.signal import fftconvolve
 from pypm.utils.search import find_nearest_index
 
+
 # TODO: Potentially making error at the edges when convolving (need to include additional pulses than requested by
 #  the user to fix issue)
+# This technicality could be largely resolved considering that the first impulse is at a radom starting position.
 
-# TODO: Let a global class inherit from a measurement object, perhaps call it Dataset
-
-
-class Bearing():
+class Bearing(object):
     """
     Define fault characteristics of bearings based on bearing parameters.
     """
@@ -85,8 +84,11 @@ class Bearing():
 
 
 class SpeedProfile():
-    # TODO: This makes the assumption that the frequency at which the speed profile is defined is the same as the master sampling frequency which is not strictly required
-    # TODO: change the starting angle at which the first fault occurs
+    """
+    Take note that this makes the assumption that the frequency at which the speed profile is defined is the same as
+    the master sampling frequency. This would lead to accurate integration to find angles, but is not strictly necessary.
+    """
+
     def __init__(self, speed_profile_type, **kwargs):
         # Values for these attributes are set in the measurement class. Initialised here as None
         self.time = None
@@ -128,17 +130,16 @@ class SpeedProfile():
         f = 2
         mean_speed = 500 * 2 * np.pi / 60  # 100 RPM in rad/s | revs/min * rads/rev * 2pi rads/rev * min/60s
         profile = mean_speed + np.sin(self.time * 2 * np.pi * f) * mean_speed * 0.5
-        return np.outer(np.ones(self.n_measurements), profile) # Currently asigning same speed profile for each measurement
+        return np.outer(np.ones(self.n_measurements),
+                        profile)  # Currently asigning same speed profile for each measurement
 
     def get_angle_as_function_of_time(self):
         """Integrate the speed profile to get the angle traversed as a function of time"""
         speed_profile = self.get_rotation_frequency_as_function_of_time()
 
-
         angle = integrate.cumtrapz(y=speed_profile, x=self.time, axis=1, initial=0)  # Assume angle starts at 0
 
-
-        return angle # + initial_angle_for_each_measurement # Initial angle is added to all indexes for each row separately
+        return angle  # + initial_angle_for_each_measurement # Initial angle is added to all indexes for each row separately
 
     def get_total_angle_traversed(self):
         return self.angles[:,
@@ -220,12 +221,13 @@ class SdofSys():
 
 class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that matter
     # TODO: Fix the init
-    def __init__(self, slip_variance_factor, fault_type, **kwargs):
+    def __init__(self, slip_variance_factor, fault_type, randomized_starting_angle, **kwargs):
         super().__init__(**kwargs)
-        # super().__init__()
 
         self.variance_factor_angular_distance_between_impulses = slip_variance_factor
         self.fault_type = fault_type  # Fault type ie. "ball", "outer", "inner"
+
+        self.randomized_starting_angle = randomized_starting_angle
         return
 
     def get_angular_distances_at_which_impulses_occur(self,
@@ -246,16 +248,18 @@ class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that ma
         # Add the distances between impulses together to find the distances from the start where impulses occur.
         cumulative_impulse_distance = np.cumsum(distance_traveled_between_impulses, axis=1)
 
-        use_random_starting_impulse = False
-        if use_random_starting_impulse:
-            random_starting_impulse_angle = np.random.uniform(0, average_angular_distance_between_impulses, (self.n_measurements, 1))
-
-        random_starting_impulse_angle = np.zeros((self.n_measurements, 1))
+        # use_random_starting_impulse = False
+        # if use_random_starting_impulse:
+        if self.randomized_starting_angle:
+            random_starting_impulse_angle = np.random.uniform(0, average_angular_distance_between_impulses,
+                                                              (self.n_measurements, 1))
+        else:
+            random_starting_impulse_angle = np.zeros((self.n_measurements, 1))
 
         # np.zeros((self.n_measurements, 1))
         angular_distances_at_which_impulses_occur = np.hstack(
-                                                    [random_starting_impulse_angle,
-                                                    cumulative_impulse_distance + random_starting_impulse_angle])  # An impulse occurs immediately
+            [random_starting_impulse_angle,
+             cumulative_impulse_distance + random_starting_impulse_angle])  # An impulse occurs immediately
         # TODO: Add random variation in when the fist impulse occurs
         return angular_distances_at_which_impulses_occur
 
@@ -338,7 +342,6 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
     Class used to define the properties of the dataset that will be simulated. Used to manage the overall pypm generation
     """
 
-    # TODO: let paramets be pulled from flattened dict from yaml
     def __init__(self,
                  n_measurements,
                  t_duration,
@@ -355,15 +358,14 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
         sampling_frequency Sampling frequency [Hz]
         """
 
-        # self.check_input_parameters(**kwargs) # TODO: need to run a check that gives the user information if the wrong arguments are provided
-
         # Noise
         self.measurement_noise_standard_deviation = measurement_noise_standard_deviation
         self.transient_amplitude_standard_deviation = transient_amplitude_standard_deviation
 
         # Sampling properties
         self.sampling_frequency = sampling_frequency
-        self.master_sample_frequency = int(self.sampling_frequency * 2)  # represents continuous time, the sampling frequency at which computations are performed.
+        self.master_sample_frequency = int(
+            self.sampling_frequency * 2)  # represents continuous time, the sampling frequency at which computations are performed.
 
         # Initialize the base classes
         super(Measurement, self).__init__(**kwargs)
@@ -373,10 +375,7 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
         self.n_measurements = n_measurements
         self.t_duration = t_duration
 
-        # Operating condition attributes
-
         # Compute derived attributes
-
         self.n_measurement_samples = self.t_duration * self.sampling_frequency  # Total number of samples over the measurment interval
 
         self.n_master_samples = int(
@@ -393,43 +392,10 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
             "geometry_factor": self.get_geometry_parameter(self.fault_type),
             "average_fault_frequency": np.average(
                 self.get_rotation_frequency_as_function_of_time()) * self.get_geometry_parameter(self.fault_type) / (
-                                                   2 * np.pi)
+                                               2 * np.pi)
         },
             "measured_time": self.measured_time
         }
-
-    def check_input_parameters(self, **kwargs):
-        """
-        Check which of the entries of the provided dictionary might be missing.
-        
-        Returns
-        -------
-        """
-        keys_required = ['fault_severity',
-                         'fault_type',
-                         'modulation_amplitude',
-                         'angle_based_modulation_frequency',
-                         'slip_variance_factor',
-                         'measurement_noise_variance',
-                         'd',
-                         'D',
-                         'n_ball',
-                         'contact_angle',
-                         'sampling_frequency',
-                         't_duration',
-                         'n_measurements',
-                         'k',
-                         'zeta',
-                         'fn',
-                         'speed_profile_type']
-
-        keys_available = (kwargs.keys())
-
-        complement = list(set(keys_required) - set(keys_available))
-        print(complement)
-
-        if len(complement) > 0:
-            raise ValueError("To few or too many parameters")
 
     def add_measurement_noise(self, array):
         return np.random.normal(array, self.measurement_noise_standard_deviation)
@@ -466,7 +432,8 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
         # those that are 1 are modified in magnitude
         # Standard deviation of 0.1 means that almost all of the data (2 standard deviations)
         # Will have an amplitude less than 20% different than otherwise
-        indexes = indexes * (1 - np.random.normal(np.zeros(indexes.shape), scale=self.transient_amplitude_standard_deviation))
+        indexes = indexes * (
+                    1 - np.random.normal(np.zeros(indexes.shape), scale=self.transient_amplitude_standard_deviation))
 
         # Get the transient response for the SDOF system
         transient = self.get_transient_response()
@@ -483,3 +450,44 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
         measured = self.add_measurement_noise(measured)
 
         return measured
+
+
+class BearingData(Measurement):
+    def __init__(self, **kwargs):
+        self.check_input_parameters(**kwargs)
+
+        # Initialize the base classes
+        super(BearingData, self).__init__(**kwargs)
+
+    def check_input_parameters(self, **kwargs):
+        """
+        Check which of the entries of the provided dictionary might be missing.
+
+        Returns
+        -------
+        """
+        keys_required = ['fault_severity',
+                         'fault_type',
+                         'modulation_amplitude',
+                         'angle_based_modulation_frequency',
+                         'slip_variance_factor',
+                         'measurement_noise_standard_deviation',
+                         'transient_amplitude_standard_deviation',
+                         'randomized_starting_angle',
+                         'd',
+                         'D',
+                         'n_ball',
+                         'contact_angle',
+                         'sampling_frequency',
+                         't_duration',
+                         'n_measurements',
+                         'k',
+                         'zeta',
+                         'fn',
+                         'speed_profile_type']
+
+        keys_available = (kwargs.keys())
+
+        complement = list(set(keys_available) - set(keys_required))
+        if len(complement) > 0:
+            raise ValueError("To too many parameters specified. Spelling?" + str(complement))

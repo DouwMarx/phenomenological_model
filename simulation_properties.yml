@@ -1,13 +1,14 @@
 fault_information:
   fault_severity: 1
   fault_type: 'outer'
-  modulation_amplitude: 1
+  modulation_amplitude: 1 # Applicable if fault_type: 'inner'
   angle_based_modulation_frequency: 0.159154 # 1/(2*pi) once per revolution
 
 stochastic_properties:
   slip_variance_factor: 0 # Variance for the generation of the random contribution (How regular is the excitations from the bearing fault)
   measurement_noise_standard_deviation : 0.45 # Standard deviation of the additive Gaussian measurement noise.
   transient_amplitude_standard_deviation : 0.0 # Standard deviation of fraction to modify the transient amplitude with
+  randomized_starting_angle: False # Should impulses start at zero angle or at a random angle?
 
 bearing_geometry:
   d : 8.4  # bearing roller diameter [mm]

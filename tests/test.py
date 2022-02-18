@@ -8,6 +8,14 @@ class TestNotebooks(unittest.TestCase):
         from notebooks.analytical_sdof_response import main
         main()
 
+    def test_make_example_dataset(self):
+        from notebooks.make_example_dataset import main
+        main()
+
+    def test_make_plots_that_illustrate_functionality(self):
+        from notebooks.make_plots_that_illustrate_functionality import main
+        main()
+
 
 class TestPhenomenologicalBearingModel(unittest.TestCase):
 

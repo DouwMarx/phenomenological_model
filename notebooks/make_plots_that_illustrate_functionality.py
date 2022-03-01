@@ -36,6 +36,7 @@ def many_figures_to_single_html(pathlib_path, list_of_figure_objects):
 spec_dict.update({
     "measurement_noise_standard_deviation": 0,
     "transient_amplitude_standard_deviation": 0,
+    "n_measurements": 2,
 })
 
 to_show_dict = {

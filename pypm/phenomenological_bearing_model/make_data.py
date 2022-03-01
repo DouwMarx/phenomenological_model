@@ -89,7 +89,7 @@ class PyBearingDataset(object):
             def process(failure_mode):
                 properties_to_modify["fault_type"] = failure_mode
                 return {failure_mode: self.make_measurements_for_different_severity(properties_to_modify)}
-            results = Parallel(n_jobs=3)(delayed(process)(failure_mode) for failure_mode in self.failure_modes)
+            results = Parallel(n_jobs=3)(delayed(process)(failure_mode) for failure_mode in self.failure_modes) # TODO: njobs independent specify
 
             failure_mode_dict = {key:val for x in results for key,val in x.items()}
 

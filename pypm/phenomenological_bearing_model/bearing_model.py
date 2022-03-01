@@ -260,7 +260,7 @@ class Impulse():  # TODO: Possibly inherit from Bearing (or Gearbox) for that ma
         angular_distances_at_which_impulses_occur = np.hstack(
             [random_starting_impulse_angle,
              cumulative_impulse_distance + random_starting_impulse_angle])  # An impulse occurs immediately
-        # TODO: Add random variation in when the fist impulse occurs
+        # TODO: There are some stochastic issues when using large numbers of samples per dataset. Need to resolve this by starting with "negative time"
         return angular_distances_at_which_impulses_occur
 
     def get_indexes_at_which_impulse_occur_for_single_measurement(self, angles_for_measurement,
@@ -393,8 +393,7 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
             "average_fault_frequency": np.average(
                 self.get_rotation_frequency_as_function_of_time()) * self.get_geometry_parameter(self.fault_type) / (
                                                2 * np.pi)
-        },
-            "measured_time": self.measured_time
+        }
         }
 
     def add_measurement_noise(self, array):

@@ -62,6 +62,18 @@ class Bearing(object):
         """
         return self.geometry_parameters[fault_type]()
 
+    def get_expected_fault_frequency(self,fault_type,rotation_frequency):
+        """
+
+        :param fault_type:
+        :param rotation_frequency:  In Hz
+        :return:
+        """
+        geometry_parameter = self.get_geometry_parameter(fault_type)
+        average_fault_freq = rotation_frequency * geometry_parameter / (2 * np.pi)
+
+        return average_fault_freq
+
     def get_angular_distance_between_impulses(self, fault_type):
         """
         Compute the expected angular distance that the bearing would rotate between impulses due to a given fault mode.
@@ -388,13 +400,15 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
                              ::2]  # The measured time is sampled at half the simulation time (continuous time).
 
         # Set some derived parameters as meta data
-        self.meta_data = {"derived": {
+        mean_rotation_frequency = self.get_rotation_frequency_as_function_of_time()
+        self.derived_meta_data =  {
             "geometry_factor": self.get_geometry_parameter(self.fault_type),
             "average_fault_frequency": np.average(
-                self.get_rotation_frequency_as_function_of_time()) * self.get_geometry_parameter(self.fault_type) / (
-                                               2 * np.pi)
+                mean_rotation_frequency) * self.get_geometry_parameter(self.fault_type) / (
+                                               2 * np.pi),
+            "mean_rotation_frequency":np.mean(mean_rotation_frequency)
         }
-        }
+
 
     def add_measurement_noise(self, array):
         return np.random.normal(array, self.measurement_noise_standard_deviation)

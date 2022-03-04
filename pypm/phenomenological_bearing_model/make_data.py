@@ -39,12 +39,12 @@ class PyBearingDataset(object):
 
         # Create a dictionary with different flavours of the same pypm as well as meta pypm
 
-        # Add derived meta-pypm to the meta pypm for later use
-        modified_simulation_properties.update(
-            measurement_obj.meta_data)
+
+        meta_data = {"simulation_governing_parameters":modified_simulation_properties}
+        meta_data.update({key:val for key,val in measurement_obj.derived_meta_data.items()})
 
         meas_dict = {"time_domain": meas,
-                     "meta_data": modified_simulation_properties}
+                     "meta_data": meta_data}
 
         return meas_dict
 

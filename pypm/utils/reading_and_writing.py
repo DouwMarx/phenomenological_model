@@ -18,7 +18,7 @@ def get_simulation_properties(quick_iter = False):
     if quick_iter:
         simulation_properties["t_duration"] = 1
         simulation_properties["sampling_frequency"] = 10000
-        simulation_properties["n_measurements"] = 100
+        simulation_properties["n_measurements"] = 10
     return simulation_properties
 
 

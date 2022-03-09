@@ -39,9 +39,13 @@ class PyBearingDataset(object):
 
         # Create a dictionary with different flavours of the same pypm as well as meta pypm
 
+        sampling_frequency = modified_simulation_properties["sampling_frequency"]
 
-        meta_data = {"simulation_governing_parameters":modified_simulation_properties}
+        meta_data = {"simulation_governing_parameters":modified_simulation_properties,
+                     "sampling_frequency":sampling_frequency}
         meta_data.update({key:val for key,val in measurement_obj.derived_meta_data.items()})
+
+
 
         meas_dict = {"time_domain": meas,
                      "meta_data": meta_data}

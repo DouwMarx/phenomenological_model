@@ -70,7 +70,7 @@ class Bearing(object):
         :return:
         """
         geometry_parameter = self.get_geometry_parameter(fault_type)
-        average_fault_freq = rotation_frequency * geometry_parameter / (2 * np.pi)
+        average_fault_freq = rotation_frequency * geometry_parameter# / (2 * np.pi)
 
         return average_fault_freq
 

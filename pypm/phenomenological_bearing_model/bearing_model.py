@@ -124,7 +124,7 @@ class SpeedProfile():
         self.angles = self.get_angle_as_function_of_time()
         self.total_angle_traversed = self.get_total_angle_traversed()
 
-    def get_rotation_frequency_as_function_of_time(self):
+    def get_rotation_angular_velocity_as_function_of_time(self):
         """
         Define the rotation rate as a function samples
         """
@@ -147,7 +147,7 @@ class SpeedProfile():
 
     def get_angle_as_function_of_time(self):
         """Integrate the speed profile to get the angle traversed as a function of time"""
-        speed_profile = self.get_rotation_frequency_as_function_of_time()
+        speed_profile = self.get_rotation_angular_velocity_as_function_of_time()
 
         angle = integrate.cumtrapz(y=speed_profile, x=self.time, axis=1, initial=0)  # Assume angle starts at 0
 
@@ -400,13 +400,10 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
                              ::2]  # The measured time is sampled at half the simulation time (continuous time).
 
         # Set some derived parameters as meta data
-        mean_rotation_frequency = self.get_rotation_frequency_as_function_of_time()
+        rotation_angular_velocity = self.get_rotation_angular_velocity_as_function_of_time() # rad/s
+
         self.derived_meta_data =  {
-            "geometry_factor": self.get_geometry_parameter(self.fault_type),
-            "average_fault_frequency": np.average(
-                mean_rotation_frequency) * self.get_geometry_parameter(self.fault_type) / (
-                                               2 * np.pi),
-            "mean_rotation_frequency":np.mean(mean_rotation_frequency)
+            "mean_rotation_frequency":np.mean(rotation_angular_velocity/(2*np.pi)) # cycle/second , Hz
         }
 
 

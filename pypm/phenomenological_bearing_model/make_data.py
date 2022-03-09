@@ -43,7 +43,9 @@ class PyBearingDataset(object):
 
         meta_data = {"simulation_governing_parameters":modified_simulation_properties,
                      "sampling_frequency":sampling_frequency}
-        meta_data.update({key:val for key,val in measurement_obj.derived_meta_data.items()})
+
+
+        meta_data.update({key:val for key,val in measurement_obj.derived_meta_data.items()}) # Add for example the mean rotation frequency
 
 
 

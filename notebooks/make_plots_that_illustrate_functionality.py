@@ -32,15 +32,16 @@ def many_figures_to_single_html(pathlib_path, list_of_figure_objects):
 
 
 # Update the standard properties
-
+default_mode = "outer"
 spec_dict.update({
     "measurement_noise_standard_deviation": 0,
     "transient_amplitude_standard_deviation": 0,
     "n_measurements": 2,
+    "fault_type": default_mode
 })
 
 to_show_dict = {
-    "Initial conditions for transients": {},
+    "Initial conditions for transients, fault type "+ default_mode: {},
     "Slip variance": {"slip_variance_factor": 0.1},
     "Varying speed": {"speed_profile_type": "sine"},
     "Variation in transient amplitude":{"transient_amplitude_standard_deviation": 0.2},

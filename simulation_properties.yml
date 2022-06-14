@@ -5,9 +5,9 @@ fault_information:
   angle_based_modulation_frequency: 0.159154 # 1/(2*pi) once per revolution
 
 stochastic_properties:
-  slip_variance_factor: 0 # Variance for the generation of the random contribution (How regular is the excitations from the bearing fault)
-  measurement_noise_standard_deviation : 0.1 #0.45 # Standard deviation of the additive Gaussian measurement noise.
-  transient_amplitude_standard_deviation : 0.0 # Standard deviation of fraction to modify the transient amplitude with
+  slip_variance_factor: 0.001 # Variance for the generation of the random contribution (How regular is the excitations from the bearing fault)
+  measurement_noise_standard_deviation : 0.2 #0.45 # Standard deviation of the additive Gaussian measurement noise.
+  transient_amplitude_standard_deviation : 0.05 # Standard deviation of fraction to modify the transient amplitude with
   randomized_starting_angle: False # Should impulses start at zero angle or at a random angle?
 
 bearing_geometry:
@@ -19,7 +19,7 @@ bearing_geometry:
 measurement_properties:
   sampling_frequency :  38400 # sample frequency [Hz]
   t_duration: 1 # 0.5 #2 #20 # time duration of measurement [s]
-  n_measurements: 10 # number of measurements to take in "parallel"
+  n_measurements: 100 # number of measurements to take in "parallel"
 
 transient_response_properties:
   k : 2.0e+13 # SDOF spring stiffness [N/m]

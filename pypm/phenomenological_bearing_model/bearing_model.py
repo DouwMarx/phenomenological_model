@@ -401,9 +401,14 @@ class Measurement(Bearing, Impulse, SdofSys, SpeedProfile, Modulate):  # , Impul
 
         # Set some derived parameters as meta data
         rotation_angular_velocity = self.get_rotation_angular_velocity_as_function_of_time() # rad/s
+        mean_rotation_angular_velocity = np.mean(rotation_angular_velocity) # rad/s
+        expected_fault_frequencies = {fault_type:self.get_expected_fault_frequency(fault_type, mean_rotation_angular_velocity/(2*np.pi))
+                                      for fault_type in ["ball", "outer", "inner"]}
 
         self.derived_meta_data =  {
-            "mean_rotation_frequency":np.mean(rotation_angular_velocity/(2*np.pi)) # cycle/second , Hz
+            "mean_rotation_frequency":np.mean(rotation_angular_velocity/(2*np.pi)), # cycle/second , Hz
+            "t_duration":self.t_duration,
+            "expected_fault_frequencies":expected_fault_frequencies
         }
 
 

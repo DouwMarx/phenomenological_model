@@ -1,11 +1,18 @@
 import numpy as np
 from pypm.phenomenological_bearing_model.bearing_model import Measurement, BearingData
-from pypm.utils.reading_and_writing import get_simulation_properties
+from pypm.utils.reading_and_writing import get_simulation_properties, flatten_dict
 
 
 class PyBearingDataset(object):
-    def __init__(self, n_severities, failure_modes, quick_iter=False, parallel_evaluate=False):
-        self.simulation_properties = get_simulation_properties(quick_iter=quick_iter)
+    def __init__(self, n_severities, failure_modes, quick_iter=False, parallel_evaluate=False,simulation_properties=None):
+        if simulation_properties is None:
+            self.simulation_properties = get_simulation_properties(quick_iter=quick_iter)
+        # If the simulation properties are specified directly, do not use the default
+        elif isinstance(simulation_properties, dict):
+            self.simulation_properties = flatten_dict(simulation_properties)
+        else:
+            raise ValueError("simulation_properties should be a dictionary")
+
         self.n_severities = n_severities
         self.failure_modes = failure_modes
         self.parallel_evaluate = parallel_evaluate

@@ -17,3 +17,6 @@ See docs/procedure.md for an high level explanation of what the code is doing.
 
 - Install the packaged required to run the code:
   pip install -r requirements.txt
+
+# Installing the local python package in a different environment (example)
+  pip install -e ~/projects/PhD/code/phenomenological_model/

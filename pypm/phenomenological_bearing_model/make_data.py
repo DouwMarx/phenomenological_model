@@ -1,12 +1,14 @@
 import numpy as np
 from pypm.phenomenological_bearing_model.bearing_model import Measurement, BearingData
 from pypm.utils.reading_and_writing import get_simulation_properties, flatten_dict
+import pathlib
 
 
 class PyBearingDataset(object):
-    def __init__(self, n_severities, failure_modes, quick_iter=False, parallel_evaluate=False,simulation_properties=None):
+    def __init__(self, n_severities=2, failure_modes=["inner","outer","ball"], quick_iter=False, parallel_evaluate=False,simulation_properties=None):
         if simulation_properties is None:
             self.simulation_properties = get_simulation_properties(quick_iter=quick_iter)
+            print("Using default simulation properties")
         # If the simulation properties are specified directly, do not use the default
         elif isinstance(simulation_properties, dict):
             self.simulation_properties = flatten_dict(simulation_properties)
@@ -44,17 +46,14 @@ class PyBearingDataset(object):
         measurement_obj = BearingData(**modified_simulation_properties)
         meas = measurement_obj.get_measurements()  # Get the time_domain measurements
 
-        # Create a dictionary with different flavours of the same pypm as well as meta pypm
+        # Create a dictionary with different flavours of the same data as well as meta data
 
         sampling_frequency = modified_simulation_properties["sampling_frequency"]
 
         meta_data = {"simulation_governing_parameters":modified_simulation_properties,
                      "sampling_frequency":sampling_frequency}
 
-
         meta_data.update({key:val for key,val in measurement_obj.derived_meta_data.items()}) # Add for example the mean rotation frequency
-
-
 
         meas_dict = {"time_domain": meas,
                      "meta_data": meta_data}

@@ -36,3 +36,11 @@ This produces a dictionary with different fault modes, different fault severitie
   pip install -e ~/projects/PhD/code/phenomenological_model/
   
 # TODO: Update the cumtrapz function to cumulative_trapezoid, fix the build file
+  If the above installation procedure does not work, you should be OK with an environment with the following packages:
+    - numpy
+    - scipy
+    - plotly
+    - tqdm
+    - pyyaml
+
+

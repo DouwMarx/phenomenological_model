@@ -65,6 +65,3 @@ for title, to_update in to_show_dict.items():
     plots.append(o)
 
 many_figures_to_single_html(plots_dir.joinpath("demonstrate_functionality.html"), plots)
-
-def main():
-    return plots

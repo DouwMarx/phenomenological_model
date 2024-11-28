@@ -1,0 +1,52 @@
+* Background
+** Require simple to use data for anomaly detection project proof of concept
+   Need data for 
+   * Different severity
+   * Different failure modes
+    
+** Started with matlab code by  [[This][Buzonni, Elia, Cocconcelli]]  
+    Did not understand phenomenological models and the code so:
+    * Annotated all the matlab [[file:~/projects/PhD/code/phenomenological_model/matlab_model/bearingSignalModelLocal.m::Geometry pamerter not including n_balls is not consistent with paper. n_balls incorporated later which could be confusing.][code]] explaining what each line does.
+     
+    Ran into some speed issues and also needed to manipulate the model more easily.
+    * Built a vectorised, and modular Python version
+     
+** Initially, the main purpose of model was to teach myself about phenomenological models
+
+
+* The model
+** Notable differences from the Matlab model
+   * Defines speed profile in the time domain
+   * Convolution, transients, cumulation, noise etc. vectorized (i.e. arrays)
+       Leads to a big speedup in computation
+   * Included comments that explain what the code does.
+   * Makes use of a "master"-sample rate that represents continuous time.
+   * Transient duration is dependent on the system properties: Damping and natural frequency.
+   * Currently only for local faults
+
+** How to use it
+   * Demo
+   * All specifications for simulation defined in .yaml file
+     
+** What does the code do?
+   
+
+* Uncertainties and weak points
+** Definition of the SDOF transient excitation
+*** Buzonni makes makes use of double integration time solution.
+     My understanding is that they effectively assume that displacement and velocity initial conditions are both zero.
+*** Discontinuities in Acceleration VS. initial zero acceleration?
+*** Choosing to define severity in terms of acceleration magnitude and not F and K dependent 
+    * Get standard response between 0 and 1.
+    * Rescale according to required acceleration magnitude.
+
+** Definition of amplitude modulation for a inner race fault. 
+** For most useful data format?
+   Currently, for each severity, failure mode, system parameters:
+   * Several measurements are created
+** Fault phase ie. when does the first fault occur.
+** Realistic settings for fault magnitude
+** Validation
+   Is there a dataset with known parameters that I can use to validate the model
+
+   

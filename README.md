@@ -20,7 +20,7 @@ non_default_properties = {"t_duration": 1,
 
 m = pbd.make_measurements_for_condition(properties_to_modify=non_default_properties)
 ```
-
+This produces a dictionary with different fault modes, different fault severities. For each fault mode and severity, a numpy array is produced where each row is a measurement and each column is a time point.
 
 ## Installation / Getting the code to run on your machine
 - clone the repository from Github:
@@ -34,3 +34,5 @@ m = pbd.make_measurements_for_condition(properties_to_modify=non_default_propert
 
 # Installing the local python package in a different environment (example)
   pip install -e ~/projects/PhD/code/phenomenological_model/
+  
+# TODO: Update the cumtrapz function to cumulative_trapezoid, fix the build file

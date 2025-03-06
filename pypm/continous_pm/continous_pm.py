@@ -6,7 +6,7 @@ particularly focusing on simulated signal datasets.
 
 Classes:
     AnomalyDetectionDataset: Base class for anomaly detection datasets, providing data loading,
-                             splitting, and standardization functionalities.
+                             splitting functionalities.
     SignalAnomalyDataset:  Abstract base class for signal-based anomaly detection datasets,
                            extending AnomalyDetectionDataset with signal segmentation capabilities.
     SimulatedSignalDataset: Abstract base class for simulated signal datasets, inheriting from
@@ -23,17 +23,15 @@ Classes:
 
 Example Usage:
     The `if __name__ == "__main__":` block at the end of this file provides a basic example
-    of how to use these classes to generate datasets and access the split and standardized data.
+    of how to use these classes to generate datasets and access the split data.
 
 Dependencies:
-    - json
     - abc
     - numpy
     - scipy
-    - torch (imported but not explicitly used in the provided code, may be relevant in a broader context)
-    - scipy.optimize
     - scipy.signal
     - sklearn.model_selection
+    - plotly (for visualization methods in SimulatedSignalDataset, but not strictly required)
 """
 
 from abc import ABC
@@ -49,8 +47,6 @@ class AnomalyDetectionDataset(object):
     Provides functionalities for:
         - Data loading (abstract method, to be implemented by subclasses)
         - Splitting data into train, test, and validation sets
-        - Standardizing data using various methods
-        - Preprocessing data (abstract method, to be implemented by subclasses if needed)
         - Managing metadata about the dataset
 
     Attributes:
@@ -58,8 +54,6 @@ class AnomalyDetectionDataset(object):
         train_ratio (float): Ratio of data to be used for training.
         test_ratio (float): Ratio of data to be used for testing.
         validation_ratio (float): Ratio of data to be used for validation.
-        standardization_method (str): Method for data standardization (e.g., "none", "standardize").
-        use_subset_of_measurements (bool or int): If True, uses a subset of samples. If int, uses that many samples.
         name (str): Name of the dataset.
         data_dtype (str): Data type for the dataset (e.g., "float32").
         healthy_data (numpy.ndarray): Healthy data loaded from `load_data()`.
@@ -70,7 +64,7 @@ class AnomalyDetectionDataset(object):
     Methods:
         __init__(self, ...): Initializes the AnomalyDetectionDataset.
         load_data(self): Abstract method to load data. Must be implemented by subclasses.
-        get_split_and_standardized_sets(self): Splits data and applies standardization.
+        get_split_and_standardized_sets(self): Splits data.
     """
     def __init__(self,
                  split_seed=1,
@@ -89,10 +83,6 @@ class AnomalyDetectionDataset(object):
             train_ratio (float, optional): Ratio of data for training. Defaults to 0.4.
             test_ratio (float, optional): Ratio of data for testing. Defaults to 0.3.
             validation_ratio (float, optional): Ratio of data for validation. Defaults to 0.3.
-            standardization_method (str, optional): Standardization method. Defaults to "none".
-                                                    Options: "none", "remove_mean_over_time",
-                                                             "remove_mean_over_time_and_rescale_by_reference_power",
-                                                             "standardize_over_time", "standardize", "whiten_spectrum".
             name (str, optional): Name of the dataset. Defaults to None (nameless).
             data_dtype (str, optional): Data type of the dataset. Defaults to "float32".
         """
@@ -109,7 +99,7 @@ class AnomalyDetectionDataset(object):
         else:
             self.name = "nameless"
 
-        self.healthy_data, self.faulty_data = self.load_data() # Healthy data has shape (n_samples, n_channels, n_features) where n_channels is 1
+        self.healthy_data, self.faulty_data = self.load_data()
 
         self.meta_data = {}
         self.meta_data.update({"name": self.name})
@@ -131,21 +121,19 @@ class AnomalyDetectionDataset(object):
 
     def get_split_and_standardized_sets(self):
         """
-        Splits the loaded data into training, testing, and validation sets, and applies
-        the specified standardization method.
+        Splits the loaded data into training, testing, and validation sets.
 
         Returns:
             tuple: A tuple containing:
-                - standardized_healthy_train (numpy.ndarray): Standardized healthy training data.
-                - standardized_healthy_test (numpy.ndarray): Standardized healthy testing data.
-                - standardized_healthy_val (numpy.ndarray or None): Standardized healthy validation data (None if validation_ratio is 0).
-                - standardized_faulty_test (dict): Dictionary of standardized faulty testing data,
+                - standardized_healthy_train (numpy.ndarray): Healthy training data.
+                - standardized_healthy_test (numpy.ndarray): Healthy testing data.
+                - standardized_healthy_val (numpy.ndarray or None): Healthy validation data (None if validation_ratio is 0).
+                - standardized_faulty_test (dict): Dictionary of faulty testing data,
                                                      where keys are fault mode names.
         """
         # Check that ratios of each independent set add up to 1
         if self.train_ratio + self.validation_ratio + self.test_ratio != 1:
             raise ValueError("Dataset ratios should add up to 1")
-
 
         # Split between test and train (Where the training data can then be further split into train and validation)
         # Note that this random splitting requires that there is no overlap when segementing the signals, since this can lead to data contamination
@@ -165,8 +153,6 @@ class AnomalyDetectionDataset(object):
         # (No faulty data used in training, multiple fault modes are possible i.e. multiple faulty test sets corresponding to single healthy dataset)
         faulty_test = {}
         for faulty_dataset_name, faulty_dataset in self.faulty_data.items():
-            # Check that the faulty dataset has enough data to sample from
-            #  TODO: Add some flexibility to allow an unbalanced test set if desired (For example, use average precision as a metric)
             faulty_test[faulty_dataset_name] = faulty_dataset
 
         return healthy_train, healthy_test, healthy_val, faulty_test
@@ -185,14 +171,12 @@ class SignalAnomalyDataset(AnomalyDetectionDataset):
         signal_length (int): Total length of the generated signal (n_samples * segment_length).
         time (numpy.ndarray): Time vector for the signal.
         sampling_frequency (int): Sampling frequency of the signal in Hz.
-        signal_duration (float): Total duration of the signal in seconds.
         meta_data (dict): Inherited and updated metadata dictionary.
 
     Methods:
         __init__(self, segment_length=12000, overlap_fraction=0.0, n_samples_per_class=1000,
                  sampling_frequency=1, **kwargs): Initializes SignalAnomalyDataset.
         cut_in_segments(self, signal, overlap_fraction=0.0): Cuts a signal into segments with specified overlap.
-        add_gaussian_noise_at_snr(self, x, signal_to_noise_ratio=1): Adds Gaussian noise to a signal at a given SNR.
     """
     def __init__(self,
                  segment_length=12000,
@@ -218,12 +202,10 @@ class SignalAnomalyDataset(AnomalyDetectionDataset):
 
         self.time = np.arange(self.signal_length) / sampling_frequency  # [s]
         self.sampling_frequency = sampling_frequency  # [Hz]
-        self.signal_duration = self.time[-1]  # [s]
 
         super().__init__(**kwargs)
 
         self.meta_data.update({
-            # "signal_duration": self.signal_duration, # Redundant info as signal_length and sampling_frequency are given
             "sampling_frequency": sampling_frequency,
             "cut_signal_length": segment_length,
         }
@@ -268,7 +250,7 @@ class SimulatedSignalDataset(SignalAnomalyDataset, ABC):
                                      Must be implemented by subclasses.
         get_noise_component(self, siglen=None): Generates a noise signal component.
         load_data(self): Loads and processes data by generating reference, faulty, and noise components,
-                       cutting into segments, and applying preprocessing.
+                       cutting into segments.
         show_components(self, domain="time"): Visualizes the individual signal components and their combinations
                                              in either the time or frequency domain (requires plotly).
         show_faulty_component_envelope_spectrum(self): Calculates and displays the envelope spectrum
@@ -316,7 +298,7 @@ class SimulatedSignalDataset(SignalAnomalyDataset, ABC):
         Returns:
             numpy.ndarray: Noise signal component.
         """
-        if siglen == None:
+        if siglen is None:
             return np.random.randn(self.signal_length) * self.noise_std
         elif type(siglen) == int:
             return np.random.randn(siglen) * self.noise_std
@@ -326,7 +308,7 @@ class SimulatedSignalDataset(SignalAnomalyDataset, ABC):
     def load_data(self):
         """
         Loads and processes data by generating reference, faulty, and noise components,
-        cutting the signals into segments, and applying preprocessing.
+        cutting the signals into segments.
 
         Returns:
             tuple: A tuple containing:
@@ -395,7 +377,7 @@ class SimulatedSignalDataset(SignalAnomalyDataset, ABC):
             raise ValueError("Unknown domain {}".format(domain))
 
         fig = make_subplots(rows=5, cols=1, shared_xaxes=True,
-                            vertical_spacing=0.0)  # Space between subplots maximal when vertical_spacing = 0.0
+                            vertical_spacing=0.0)
         fig.add_trace(go.Scatter(x=independent_variable, y=reference, line=dict(color="black")), row=1, col=1)
         fig.add_trace(go.Scatter(x=independent_variable, y=faulty, line=dict(color="black")), row=2, col=1)
         fig.add_trace(go.Scatter(x=independent_variable, y=noise_reference, line=dict(color="black")), row=3, col=1)
@@ -408,46 +390,32 @@ class SimulatedSignalDataset(SignalAnomalyDataset, ABC):
             trace.showlegend = False
 
         annotation_dict = dict(
-            text="1",  # Your large number
+            text="1",
             xref="x domain",
             yref="y domain",
             x=0.03,
             y=1,
             showarrow=False,
             font=dict(size=20),
-            # Solid white background
             bgcolor="white",
-            # bordercolor="black",
-            # borderwidth=3,
         )
 
         annotation_dict.update({"text": 'Reference Component (1)'})
-        # fig.update_yaxes(title_text=r'$\text{Reference Component }  [m/s^2]$', row=1, col=1)
-
         fig.add_annotation(**annotation_dict, row=1, col=1)
 
         annotation_dict.update({"text": 'Faulty Component: (2)'})
-        # fig.update_yaxes(title_text=r'$\text{Faulty Component }  [m/s^2]$', row=2, col=1)
         fig.add_annotation(**annotation_dict, row=2, col=1)
 
         annotation_dict.update({"text": 'Noise Component: (3)'})
-        # fig.update_yaxes(title_text=r'$\text{Noise Component }  [m/s^2]$', row=3, col=1)
         fig.add_annotation(**annotation_dict, row=3, col=1)
 
-        # annotation_dict.update({"text": r'$\text{Reference Condition } \quad (1)+(3) $'})
         annotation_dict.update({"text": 'Reference Condition: (1) + (3)'})
-        # fig.update_yaxes(title_text= r'$\text{Reference Condition } (\mathcal{H}_0) \text{ } [m/s^2]$', row=4, col=1)
         fig.add_annotation(**annotation_dict, row=4, col=1)
 
         annotation_dict.update({"text": 'Faulty Condition: (1) + (2) + (3)'})
-        # fig.update_yaxes(title_text= r'$\text{Faulty Condition } (\mathcal{H}_1)) \text{ }  [m/s^2]$', row=5, col=1)
-        # Make the y-axis label horizontal
-        # fig.update_yaxes(title_standoff=0, row=5, col=1)
-
         fig.add_annotation(**annotation_dict, row=5, col=1)
 
         # Add a master axis to the left of the figures
-        # fig.update_yaxes(title_text=r'$\text{Signal Component }  [m/s^2]$', row=3, col=1)
         fig.update_yaxes(title_text=r'$\Large{\text{Signal Component }  [\text{m/s}^{2}]}$', row=3, col=1)
 
         ticksize = 16
@@ -475,7 +443,6 @@ class SimulatedSignalDataset(SignalAnomalyDataset, ABC):
 
         fig.update_layout(
             title="Signal Components",
-            # xaxis5_title=r'$\text{Time [s]}$',
             xaxis5_title=x_axis_title
         )
 
@@ -563,17 +530,12 @@ class LowFreqBandpassImpulsiveVSHighFreqBandpassImpulsive(SimulatedSignalDataset
     def __init__(self,
                  peak_fault=2,
                  peak_ref=5,
-                 reference_band=[0, 0.7],  # Band as fraction of nyquist
-                 faulty_band=[0.6, 0.8],  # Band as fraction of nyquist (7000Hz is around 7000/(20480/2) = 0.68)
-                 f_fault=108.1,  # Hz (Bearing fault frequency, BPFO)
-                 f_ref=273.7,  # Hz (Gear mesh frequency) @ 1500 RPM
-                 # To ensure 10 fault events per segments we require a segment length
-                 # 108 times per second is 108/20480  times per sample
-                 # We need 10 events per segment, so we need 10*20480/108 samples per segment
-                 # That is roughly 2000 samples per segment
-                 n_samples_per_class=100,  #
-                 segment_length=800, #  1024, # 5120,
-                 #  int(10240), #  int(20480), # int(10240), #  int(5120),#  int(4096), #    int(10240),  # Samples
+                 reference_band=[0, 0.7],
+                 faulty_band=[0.6, 0.8],
+                 f_fault=108.1,
+                 f_ref=273.7,
+                 n_samples_per_class=100,
+                 segment_length=800,
                  sampling_frequency=20480,
                  reference_epsilon=1,
                  faulty_epsilon=1e-2,
@@ -645,7 +607,7 @@ class LowFreqBandpassImpulsiveVSHighFreqBandpassImpulsive(SimulatedSignalDataset
             x = np.random.randn(self.signal_length)
             return x / np.std(x)  # Standardize the signal to have unit variance
 
-        if 1 > lowcut > 0 and 1 > highcut > 0:
+        if 0 < lowcut < 1 and 0 < highcut < 1: # Corrected condition for bandpass
             b, a = butter(order, [lowcut, highcut], btype='bandpass')
         elif lowcut == 0:
             b, a = butter(order, highcut, btype='lowpass')
@@ -673,19 +635,7 @@ class LowFreqBandpassImpulsiveVSHighFreqBandpassImpulsive(SimulatedSignalDataset
         Returns:
             numpy.ndarray: Impulsive signal.
         """
-
-        # Elegant version, but does not completely reach zero
-        # return amplitude*epsilon/(1+ epsilon - np.cos(2*np.pi*frequency*self.time)) # For the cos version you need to remember the negative sign, but the first impulse is at zero
-
-        # Less elegant version, but reaches zero
-        """
-        Latex
-
-        s(t) = \frac{1}{2}\cos(2\pi f t) + \frac{1}{2}
-        m(t) = \frac{A \epsilon s(t)}{1 + \epsilon - s(t)}
-        """
         random_phase = np.random.rand() * 2 * np.pi
-        # print("Print random phase", random_phase)
 
         s = 0.5 * np.cos(2 * np.pi * frequency * self.time + random_phase) + 0.5
         return amplitude * epsilon * s / (1 + epsilon - s)
@@ -744,7 +694,7 @@ class LowFreqSineVSHighFreqSine(SimulatedSignalDataset):
         get_faulty_component(self): Generates the faulty signal component (high-frequency sine wave).
     """
     def __init__(self,
-                 f_ref=3 / 20,  # Frequency as fraction of Nyquist
+                 f_ref=3 / 20,
                  f_fault=8 / 20,
                  n_samples_per_class=100,
                  segment_length=20,
@@ -834,11 +784,11 @@ if __name__ == "__main__":
     impulsive_dataset = LowFreqBandpassImpulsiveVSHighFreqBandpassImpulsive(
         peak_fault=2,
         peak_ref=5,
-        reference_band=[0, 0.7],  # Band as fraction of Nyquist
-        faulty_band=[0.6, 0.8],  # Band as fraction of Nyquist
-        n_samples_per_class=50,  # Reduced samples for quick example
-        segment_length=1000,      # Reduced segment length
-        sampling_frequency=10240, # Reduced sampling frequency
+        reference_band=[0, 0.7],
+        faulty_band=[0.6, 0.8],
+        n_samples_per_class=50,
+        segment_length=1000,
+        sampling_frequency=10240,
         train_ratio=0.6,
         test_ratio=0.2,
         validation_ratio=0.2,
@@ -860,14 +810,14 @@ if __name__ == "__main__":
     sine_dataset = LowFreqSineVSHighFreqSine(
         peak_fault=0.1,
         peak_ref=1,
-        f_ref=3 / 10,  # Frequency as fraction of Nyquist
+        f_ref=3 / 10,
         f_fault=8 / 10,
-        n_samples_per_class=50, # Reduced samples for quick example
-        segment_length=1000,     # Reduced segment length
-        sampling_frequency=64,  # Reduced sampling frequency
+        n_samples_per_class=50,
+        segment_length=1000,
+        sampling_frequency=64,
         train_ratio=0.5,
         test_ratio=0.5,
-        validation_ratio=0.0, # No validation for simplicity in this example
+        validation_ratio=0.0,
     )
     healthy_train_sine, healthy_test_sine, healthy_val_sine, faulty_test_sine = sine_dataset.get_split_and_standardized_sets()
     sine_dataset.show_components()
@@ -876,7 +826,7 @@ if __name__ == "__main__":
     print("Healthy Train data shape:", healthy_train_sine.shape)
     print("Healthy Test data shape:", healthy_test_sine.shape)
     if healthy_val_sine is not None:
-        print("Healthy Validation data shape:", healthy_val_sine.shape) # Will be None in this example
+        print("Healthy Validation data shape:", healthy_val_sine.shape)
     print("Faulty Test data keys:", faulty_test_sine.keys())
     for fault_mode, data in faulty_test_sine.items():
         print(f"Faulty Test data shape ({fault_mode}):", data.shape)
